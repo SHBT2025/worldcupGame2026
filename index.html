@@ -1,0 +1,744 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
+<meta name="theme-color" content="#FFD700">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="世界杯竞猜">
+<meta name="application-name" content="2026 FIFA 世界杯竞猜游戏">
+<meta name="mobile-web-app-capable" content="yes">
+<link rel="manifest" href="manifest.json">
+<link rel="icon" type="image/png" sizes="48x48" href="icon-48.png">
+<link rel="icon" type="image/png" sizes="96x96" href="icon-96.png">
+<link rel="icon" type="image/png" sizes="144x144" href="icon-144.png">
+<link rel="icon" type="image/png" sizes="192x192" href="icon-192.png">
+<link rel="icon" type="image/png" sizes="512x512" href="icon-512.png">
+<link rel="apple-touch-icon" sizes="144x144" href="icon-144.png">
+<link rel="apple-touch-icon" sizes="192x192" href="icon-192.png">
+<link rel="apple-touch-icon" sizes="512x512" href="icon-512.png">
+<title>2026 FIFA 世界杯竞猜游戏</title>
+<style>
+:root{--gold:#FFD700;--gold2:#C8A400;--gd:#0A4A2A;--gm:#1A6B3A;--rd:#8B0000;--rv:#E02020;--bl:#1565C0;--pu:#6A1B9A;--bg:#0A0E1A;--bc:#111827;--bc2:#1A2232;--tm:#F0F4FF;--mu:#8899BB;--bg2:rgba(255,215,0,0.35);--bg3:rgba(45,138,80,0.4)}
+*{box-sizing:border-box;margin:0;padding:0}
+body{background:var(--bg);color:var(--tm);font-family:'PingFang SC','Microsoft YaHei',sans-serif;font-size:13px;min-height:100vh}
+.hdr{background:linear-gradient(135deg,#0A2A10,#1A4A20 40%,#0A1A3A);border-bottom:2px solid var(--gold);text-align:center;padding:16px 12px 12px;position:sticky;top:0;z-index:100}
+.hdr h1{font-size:19px;color:var(--gold);letter-spacing:2px;font-weight:700;text-shadow:0 0 16px rgba(255,215,0,.4)}
+.hdr p{font-size:11px;color:var(--mu);margin-top:3px}
+.nav{display:flex;background:#0D1520;border-bottom:1px solid var(--bg2);overflow-x:auto}
+.tab{flex:1;min-width:88px;padding:11px 6px;text-align:center;cursor:pointer;font-size:12px;color:var(--mu);border-bottom:3px solid transparent;white-space:nowrap;transition:.2s}
+.tab.on{color:var(--gold);border-bottom-color:var(--gold);background:rgba(255,215,0,.04)}
+.pg{display:none;max-width:980px;margin:0 auto;padding:10px}
+.pg.on{display:block}
+.sec{background:var(--bc);border:1px solid var(--bg2);border-radius:9px;margin-bottom:12px;overflow:hidden}
+.sh{display:flex;align-items:center;justify-content:space-between;padding:10px 14px;background:linear-gradient(90deg,var(--gd),#0D2030);cursor:pointer;user-select:none}
+.sh h2{font-size:13px;color:var(--gold);font-weight:700;display:flex;align-items:center;gap:6px}
+.tb{background:rgba(255,215,0,.12);border:1px solid var(--bg2);color:var(--gold);padding:3px 9px;border-radius:16px;cursor:pointer;font-size:11px}
+.sb.cl{display:none}
+.sw{overflow-x:auto}
+table{width:100%;border-collapse:collapse;font-size:11px}
+th{background:var(--gm);color:var(--gold);padding:6px 4px;text-align:center;font-weight:600;white-space:nowrap;border-bottom:1px solid var(--bg2)}
+td{padding:5px 4px;text-align:center;border-bottom:1px solid rgba(255,255,255,.05);white-space:nowrap}
+tr:nth-child(even) td{background:rgba(255,255,255,.02)}
+tr:hover td{background:rgba(255,215,0,.04)}
+.sb{background:var(--bc2);border:1px solid rgba(21,101,192,.35);padding:2px 5px;border-radius:4px;font-weight:700;font-size:12px;color:#90CAF9;display:inline-block;min-width:30px}
+.sf{background:rgba(46,125,50,.4);color:#A5D6A7}
+.rb{display:inline-block;padding:2px 7px;border-radius:10px;font-size:10px;font-weight:700}
+.W{background:rgba(46,125,50,.5);color:#81C784}
+.D{background:rgba(100,100,100,.4);color:#CFD8DC}
+.L{background:rgba(183,28,28,.4);color:#EF9A9A}
+.gl{display:inline-block;padding:2px 6px;border-radius:3px;font-size:10px;font-weight:700;background:rgba(106,27,154,.4);color:#CE93D8}
+.sg{display:grid;grid-template-columns:repeat(auto-fill,minmax(255px,1fr));gap:9px;padding:9px}
+.gb{background:var(--bc2);border:1px solid var(--bg3);border-radius:7px;overflow:hidden}
+.gbh{background:var(--gd);padding:6px 10px;font-weight:700;color:var(--gold);font-size:12px;border-bottom:1px solid var(--bg2)}
+.gb th{font-size:10px;padding:4px 3px}
+.gb td{font-size:11px;padding:4px 3px}
+.tg{display:grid;grid-template-columns:repeat(auto-fill,minmax(165px,1fr));gap:7px;padding:9px}
+.tc{background:var(--bc2);border:1px solid var(--bg2);border-radius:7px;padding:7px 9px;display:flex;align-items:center;gap:7px}
+.tr{width:24px;height:24px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-weight:700;font-size:11px;flex-shrink:0}
+.rt{background:rgba(255,215,0,.22);color:var(--gold);border:1px solid var(--gold2)}
+.ro{background:rgba(100,100,100,.18);color:var(--mu);border:1px solid rgba(255,255,255,.1)}
+.krh{background:linear-gradient(90deg,var(--rd),#4A0010);padding:6px 12px;font-weight:700;color:#FFB3B3;font-size:11px;border-top:1px solid rgba(224,32,32,.3);border-bottom:1px solid rgba(224,32,32,.3)}
+.btn{padding:6px 13px;border-radius:18px;border:none;cursor:pointer;font-size:12px;font-weight:600;transition:.2s}
+.bg{background:linear-gradient(135deg,var(--gold2),var(--gold));color:#1A1000}
+.bg:hover{transform:translateY(-1px);box-shadow:0 4px 12px rgba(255,215,0,.3)}
+.bge{background:linear-gradient(135deg,var(--gd),var(--gm));color:var(--gold);border:1px solid var(--bg2)}
+.br{background:linear-gradient(135deg,var(--rd),var(--rv));color:#fff}
+.bb{background:linear-gradient(135deg,#0D47A1,var(--bl));color:#fff}
+.dc{color:#7EB3FF;font-size:10px}
+.dt{color:#A0B4CC;font-size:10px}
+.rbar{display:flex;align-items:center;gap:9px;padding:7px 10px;border-bottom:1px solid var(--bg2);background:rgba(0,0,0,.2);flex-wrap:wrap}
+.rbtn{display:flex;align-items:center;gap:5px;padding:5px 13px;background:rgba(255,215,0,.1);border:1px solid var(--bg2);color:var(--gold);border-radius:18px;cursor:pointer;font-size:12px;transition:.2s}
+.rbtn:hover{background:rgba(255,215,0,.2)}
+.rbtn:disabled{opacity:.5;cursor:not-allowed}
+.rst{font-size:11px;color:var(--mu);flex:1}
+.sp{animation:spin 1s linear infinite;display:inline-block}
+@keyframes spin{to{transform:rotate(360deg)}}
+.sc{display:flex;gap:9px;flex-wrap:wrap;padding:9px 10px;border-bottom:1px solid var(--bg2);background:var(--bc2)}
+.si{background:var(--bc2);border:1px solid var(--bg3);border-radius:7px;margin-bottom:7px;overflow:hidden}
+.sih{display:flex;align-items:center;justify-content:space-between;padding:8px 11px;background:rgba(255,215,0,.04);border-bottom:1px solid var(--bg2)}
+.bs{display:grid;grid-template-columns:repeat(3,1fr);gap:7px;padding:9px}
+.bst{background:var(--bc2);border-radius:7px;padding:9px;text-align:center;border:1px solid var(--bg2)}
+.bsv{font-size:17px;font-weight:700;color:var(--gold);display:block}
+.bsl{font-size:10px;color:var(--mu);margin-top:2px}
+.ob{background:rgba(255,165,0,.2);color:#FFB74D;border:1px solid rgba(255,165,0,.4);padding:2px 6px;border-radius:4px;font-size:11px;font-weight:700;cursor:pointer;transition:.2s}
+.ob:hover,.ob.sel{background:rgba(255,165,0,.45)}
+.bbt{background:linear-gradient(135deg,#4A0060,var(--pu));color:#E1BEE7;border:1px solid rgba(106,27,154,.5);padding:2px 8px;border-radius:9px;cursor:pointer;font-size:11px;font-weight:600}
+.bsp{background:#0D1A2E;border:1px solid rgba(106,27,154,.5);border-radius:7px;margin:0 10px 10px;overflow:hidden}
+.bsph{background:linear-gradient(90deg,#4A0060,#0D1A2E);padding:8px 11px;display:flex;align-items:center;justify-content:space-between;border-bottom:1px solid rgba(106,27,154,.4)}
+.bsph span{color:#CE93D8;font-weight:700;font-size:12px}
+.spit{padding:6px 11px;border-bottom:1px solid rgba(255,255,255,.05);font-size:11px}
+.spit.won{background:rgba(46,125,50,.15);border-left:3px solid #4CAF50}
+.spit.lost{background:rgba(183,28,28,.15);border-left:3px solid #E53935}
+.spft{padding:8px 11px;display:flex;gap:7px;align-items:center;flex-wrap:wrap;background:rgba(106,27,154,.1)}
+.mo{display:none;position:fixed;inset:0;background:rgba(0,0,10,.88);z-index:200;align-items:center;justify-content:center}
+.mo.op{display:flex}
+.md{background:var(--bc);border:1px solid var(--bg2);border-radius:11px;width:90%;max-width:420px;padding:16px;max-height:90vh;overflow-y:auto}
+.md h3{color:var(--gold);margin-bottom:11px;font-size:14px}
+.mf{margin-bottom:9px}
+.mf label{display:block;color:var(--mu);font-size:11px;margin-bottom:3px}
+.mf input,.mf select{width:100%;background:var(--bc2);border:1px solid rgba(255,255,255,.15);color:var(--tm);padding:6px 9px;border-radius:5px;font-size:13px}
+.ma{display:flex;gap:7px;margin-top:12px}
+.disc{margin:14px 0 6px;background:rgba(255,215,0,.03);border:1px solid rgba(255,215,0,.12);border-radius:7px;padding:9px 12px;font-size:10px;color:var(--mu);text-align:center;line-height:1.6}
+.new-badge{background:rgba(46,125,50,.35);color:#81C784;border:1px solid rgba(81,200,100,.4);border-radius:10px;padding:1px 6px;font-size:10px;margin-left:5px;animation:fadein .5s}
+@keyframes fadein{from{opacity:0;transform:scale(.8)}to{opacity:1;transform:scale(1)}}
+::-webkit-scrollbar{width:5px;height:5px}
+::-webkit-scrollbar-track{background:var(--bg)}
+::-webkit-scrollbar-thumb{background:rgba(255,215,0,.25);border-radius:3px}
+@media(max-width:580px){.sg{grid-template-columns:1fr}.hdr h1{font-size:16px}}
+</style>
+</head>
+<body>
+
+<div class="hdr">
+  <h1>🏆 FIFA 2026 世界杯竞猜游戏</h1>
+  <p>数据来源：openfootball 开源数据 · 实时刷新 · 无需API密钥</p>
+</div>
+
+<div class="nav">
+  <div class="tab on" onclick="switchPage('home')">📊 赛况首页</div>
+  <div class="tab" onclick="switchPage('sim')">🎮 模拟赛果</div>
+  <div class="tab" onclick="switchPage('bet')">🎰 模拟投注</div>
+</div>
+
+<!-- HOME -->
+<div id="pg-home" class="pg on">
+  <div class="rbar">
+    <button class="rbtn" id="rbtn" onclick="doRefresh()">
+      <span id="ri">🔄</span> 刷新实时赛果
+    </button>
+    <div class="rst" id="rst">数据来自 github.com/openfootball/worldcup.json · 免费开源 · 无需密钥</div>
+  </div>
+
+  <!-- 1: GROUP SCHEDULE -->
+  <div class="sec">
+    <div class="sh" onclick="toggleSec(this)">
+      <h2>📅 小组赛赛程表</h2><button class="tb">收起 ▲</button>
+    </div>
+    <div class="sb">
+      <div class="sw">
+        <table>
+          <thead><tr><th>日期</th><th>星期</th><th>时间(北京)</th><th>组别</th><th>场地</th><th>主队</th><th>客队</th><th>半场</th><th>全场</th><th>结果</th></tr></thead>
+          <tbody id="gtb"></tbody>
+        </table>
+      </div>
+    </div>
+  </div>
+
+  <div style="display:grid;grid-template-columns:1fr 1fr;gap:11px">
+    <!-- 2: STANDINGS -->
+    <div class="sec" style="margin:0">
+      <div class="sh" onclick="toggleSec(this)">
+        <h2>🏅 小组赛积分榜</h2><button class="tb">收起 ▲</button>
+      </div>
+      <div class="sb">
+        <div class="sg" id="sg" style="grid-template-columns:1fr"></div>
+      </div>
+    </div>
+    <!-- 3: THIRDS -->
+    <div class="sec" style="margin:0">
+      <div class="sh" onclick="toggleSec(this)">
+        <h2>🥉 小组第三名</h2><button class="tb">收起 ▲</button>
+      </div>
+      <div class="sb"><div id="td3"></div></div>
+    </div>
+  </div>
+
+  <!-- 4: KNOCKOUT -->
+  <div class="sec" style="margin-top:12px">
+    <div class="sh" onclick="toggleSec(this)">
+      <h2>⚔️ 32强淘汰赛赛程</h2><button class="tb">收起 ▲</button>
+    </div>
+    <div class="sb">
+      <div class="sw">
+        <table>
+          <thead><tr><th>场序</th><th>轮次</th><th>日期</th><th>时间(北京)</th><th>场地</th><th>主队</th><th>客队</th><th>半场</th><th>全场</th><th>90分钟</th><th>点球</th></tr></thead>
+          <tbody id="ktb"></tbody>
+        </table>
+      </div>
+    </div>
+  </div>
+  <div class="disc">⚠️ 本应用纯属娱乐，赛果数据来自 openfootball 开源项目（github.com/openfootball/worldcup.json），不推广任何违法博彩，不涉及真实金钱交易。</div>
+</div>
+
+<!-- SIM -->
+<div id="pg-sim" class="pg">
+  <div class="sc">
+    <button class="btn bg" onclick="newSim()">➕ 新建模拟</button>
+    <span style="color:var(--mu);font-size:11px;align-self:center">复制当前赛况，自由预测未开赛比赛，系统自动推算积分</span>
+  </div>
+  <div style="padding:9px" id="simlist">
+    <div style="text-align:center;padding:36px;color:var(--mu)"><div style="font-size:32px;margin-bottom:8px">🎮</div><p>暂无模拟，点击上方新建</p></div>
+  </div>
+</div>
+
+<!-- BET -->
+<div id="pg-bet" class="pg">
+  <div class="bs">
+    <div class="bst"><span class="bsv" id="st-tot">¥0</span><div class="bsl">总投注</div></div>
+    <div class="bst"><span class="bsv" id="st-won" style="color:#81C784">¥0</span><div class="bsl">已中奖</div></div>
+    <div class="bst"><span class="bsv" id="st-pnl" style="color:#EF9A9A">¥0</span><div class="bsl">盈亏</div></div>
+  </div>
+  <div class="sec" style="margin:0 0 10px">
+    <div class="sh" onclick="toggleSec(this)">
+      <h2>🎰 投注赔率 & 下注</h2><button class="tb">收起 ▲</button>
+    </div>
+    <div class="sb">
+      <div style="padding:5px 9px;font-size:10px;color:var(--mu);border-bottom:1px solid var(--bg2)">
+        赔率参考竞彩足球（模拟值），开赛前2天公布。已结束比赛不显示。
+      </div>
+      <div class="sw">
+        <table>
+          <thead><tr><th>日期/时间</th><th>对阵</th><th>主胜</th><th>平局</th><th>客胜</th><th>操作</th></tr></thead>
+          <tbody id="bettb"></tbody>
+        </table>
+      </div>
+    </div>
+  </div>
+  <div class="bsp">
+    <div class="bsph">
+      <span>📋 投注单</span>
+      <div style="display:flex;gap:5px">
+        <button class="btn br" style="padding:3px 9px;font-size:10px;border-radius:9px" onclick="clearSlip()">清空</button>
+        <button class="btn bg" style="padding:3px 9px;font-size:10px;border-radius:9px" onclick="confirmBet()">确认投注</button>
+      </div>
+    </div>
+    <div id="spitems"><div style="padding:12px;text-align:center;color:var(--mu);font-size:11px">投注单为空</div></div>
+    <div class="spft" id="spft" style="display:none">
+      <div style="font-size:11px">金额: <input type="number" id="bamt" value="10" min="1" style="width:58px;background:var(--bc2);border:1px solid rgba(255,255,255,.15);color:var(--tm);padding:2px 5px;border-radius:4px;font-size:12px"> 元</div>
+      <div><select id="btype" style="background:var(--bc2);border:1px solid rgba(255,255,255,.15);color:var(--tm);padding:2px 5px;border-radius:4px;font-size:11px">
+        <option value="single">单场</option><option value="p2">二串一</option><option value="p3">三串一</option><option value="acc">过关</option>
+      </select></div>
+      <div style="font-size:11px;color:var(--gold)">预期: <span id="expw">¥0</span></div>
+    </div>
+  </div>
+  <div style="padding:0 10px">
+    <div style="color:var(--gold);font-weight:700;margin-bottom:7px;font-size:12px">📃 投注历史</div>
+    <div id="bhist"><div style="color:var(--mu);font-size:11px;text-align:center;padding:14px">暂无记录</div></div>
+  </div>
+  <div class="disc">⚠️ 模拟投注纯属娱乐，不涉及真实货币，不推广赌博行为，不鼓励未成年人参与。</div>
+</div>
+
+<div class="mo" id="mo-sim">
+  <div class="md">
+    <h3>🎮 新建模拟赛果</h3>
+    <div class="mf"><label>模拟名称</label><input type="text" id="simname" placeholder="例如：我的冠军预测"></div>
+    <div style="font-size:11px;color:var(--mu);line-height:1.6">创建后复制当前赛况。已有赛果的比赛锁定不可改，未开赛的可自由预测，系统自动推算积分排名。</div>
+    <div class="ma">
+      <button class="btn bg" onclick="createSim()">确认创建</button>
+      <button class="btn bge" onclick="closeMo('mo-sim')">取消</button>
+    </div>
+  </div>
+</div>
+
+<script>
+// ============================================================
+// DATA SOURCE: openfootball GitHub raw JSON (free, no key, CORS open)
+// ============================================================
+const DATA_URL = 'https://raw.githubusercontent.com/openfootball/worldcup.json/master/2026/worldcup.json';
+
+// UTC offset map for converting to Beijing time (UTC+8)
+// Venue timezone offsets from UTC
+function toBJT(dateStr, timeStr) {
+  // timeStr like "13:00 UTC-6" or "16:30 UTC-4"
+  const m = timeStr.match(/(\d+):(\d+)\s+UTC([+-]\d+)/);
+  if (!m) return timeStr.replace(/UTC[+-]\d+/,'BJT');
+  const [,h,mi,off] = m;
+  const utcH = parseInt(h) - parseInt(off); // convert to UTC
+  const bjtH = utcH + 8; // UTC+8
+  const finalH = ((bjtH % 24) + 24) % 24;
+  return `${String(finalH).padStart(2,'0')}:${mi}`;
+}
+
+const WDAYS = ['日','一','二','三','四','五','六'];
+function wday(dateStr) {
+  const d = new Date(dateStr + 'T12:00:00Z');
+  return '星期' + WDAYS[d.getDay()];
+}
+function fmtDate(dateStr) {
+  const d = new Date(dateStr + 'T12:00:00Z');
+  return `${d.getUTCMonth()+1}月${d.getUTCDate()}日`;
+}
+function groundShort(g) {
+  return g.replace(' (Foxborough)','').replace(' (Inglewood)','').replace(' (East Rutherford)','')
+    .replace(' (Miami Gardens)','').replace(' (Santa Clara)','')
+    .replace(' (Zapopan)','').replace(' (Guadalupe)','');
+}
+
+// English→Chinese team name map
+const TM = {
+  'Mexico':'墨西哥','South Africa':'南非','South Korea':'韩国','Czech Republic':'捷克',
+  'Canada':'加拿大','Bosnia & Herzegovina':'波黑','Qatar':'卡塔尔','Switzerland':'瑞士',
+  'Brazil':'巴西','Morocco':'摩洛哥','Haiti':'海地','Scotland':'苏格兰',
+  'USA':'美国','Paraguay':'巴拉圭','Australia':'澳大利亚','Turkey':'土耳其','Türkiye':'土耳其',
+  'Germany':'德国','Curaçao':'库拉索','Ivory Coast':'科特迪瓦','Ecuador':'厄瓜多尔',
+  'Netherlands':'荷兰','Japan':'日本','Sweden':'瑞典','Tunisia':'突尼斯',
+  'Spain':'西班牙','Belgium':'比利时','Egypt':'埃及','New Zealand':'新西兰',
+  'Cape Verde':'佛得角','Saudi Arabia':'沙特阿拉伯','Iran':'伊朗','Uruguay':'乌拉圭',
+  'France':'法国','Senegal':'塞内加尔','Iraq':'伊拉克','Norway':'挪威',
+  'Argentina':'阿根廷','Algeria':'阿尔及利亚','Austria':'奥地利','Jordan':'约旦',
+  'Portugal':'葡萄牙','DR Congo':'刚果(金)','Uzbekistan':'乌兹别克斯坦','Colombia':'哥伦比亚',
+  'England':'英格兰','Croatia':'克罗地亚','Ghana':'加纳','Panama':'巴拿马',
+};
+const GT = {
+  'Group A':['墨西哥','南非','韩国','捷克'],
+  'Group B':['加拿大','波黑','卡塔尔','瑞士'],
+  'Group C':['巴西','摩洛哥','海地','苏格兰'],
+  'Group D':['美国','巴拉圭','澳大利亚','土耳其'],
+  'Group E':['德国','库拉索','科特迪瓦','厄瓜多尔'],
+  'Group F':['荷兰','日本','瑞典','突尼斯'],
+  'Group G':['比利时','埃及','伊朗','新西兰'],
+  'Group H':['西班牙','佛得角','沙特阿拉伯','乌拉圭'],
+  'Group I':['法国','塞内加尔','伊拉克','挪威'],
+  'Group J':['阿根廷','阿尔及利亚','奥地利','约旦'],
+  'Group K':['葡萄牙','刚果(金)','乌兹别克斯坦','哥伦比亚'],
+  'Group L':['英格兰','克罗地亚','加纳','巴拿马'],
+};
+function t(en){ return TM[en] || en; }
+function groupShort(g){ return g.replace('Group ',''); }
+
+// Round name translation
+const RN = {
+  'Matchday 1':'第一轮','Matchday 2':'第一轮','Matchday 3':'第一轮',
+  'Matchday 8':'第二轮','Matchday 9':'第二轮','Matchday 10':'第二轮',
+  'Matchday 14':'第三轮','Matchday 15':'第三轮','Matchday 16':'第三轮',
+  'Round of 32':'1/16决赛','Round of 16':'1/8决赛',
+  'Quarter-finals':'1/4决赛','Semi-finals':'半决赛',
+  'Match for third place':'三四名决赛','Final':'决赛',
+};
+function rn(r){ return RN[r] || r; }
+
+// State
+let allMatches = [];
+let lastFetch = 0;
+const CACHE_KEY = 'wc26_v2';
+
+async function doRefresh() {
+  const btn = document.getElementById('rbtn');
+  const st = document.getElementById('rst');
+  const ri = document.getElementById('ri');
+  btn.disabled = true;
+  ri.className = 'sp';
+  ri.textContent = '⏳';
+  st.textContent = '正在从 github.com/openfootball 获取最新数据...';
+
+  try {
+    // Cache-bust with timestamp to always get fresh data
+    const url = DATA_URL + '?t=' + Date.now();
+    const resp = await fetch(url);
+    if (!resp.ok) throw new Error('HTTP ' + resp.status);
+    const data = await resp.json();
+    
+    const prev = allMatches.filter(m => m.score).length;
+    allMatches = data.matches || [];
+    const curr = allMatches.filter(m => m.score).length;
+    const newResults = curr - prev;
+
+    // Save to localStorage
+    localStorage.setItem(CACHE_KEY, JSON.stringify({matches: allMatches, ts: Date.now()}));
+    lastFetch = Date.now();
+
+    const timeStr = new Date().toLocaleTimeString('zh-CN', {hour:'2-digit',minute:'2-digit'});
+    st.innerHTML = `✅ 更新成功 · ${timeStr} · 共 ${allMatches.length} 场 · ${curr} 场已有结果${newResults>0?' · <span style="color:#81C784">新增 '+newResults+' 场赛果</span>':''}`;
+  } catch(e) {
+    st.textContent = '⚠️ 获取失败，尝试使用缓存数据（' + e.message + '）';
+    // try cache
+    loadFromCache();
+  }
+
+  ri.className = '';
+  ri.textContent = '🔄';
+  btn.disabled = false;
+  renderAll();
+}
+
+function loadFromCache() {
+  const raw = localStorage.getItem(CACHE_KEY);
+  if (raw) {
+    try {
+      const d = JSON.parse(raw);
+      allMatches = d.matches || [];
+      const ts = new Date(d.ts).toLocaleString('zh-CN');
+      document.getElementById('rst').textContent = `📦 使用缓存数据（${ts}）`;
+    } catch(e) {}
+  }
+}
+
+// ============================================================
+// STANDINGS
+// ============================================================
+function calcStandings(grpName) {
+  const teams = GT[grpName] || [];
+  const stats = {};
+  teams.forEach(t => stats[t] = {team:t,p:0,w:0,d:0,l:0,gf:0,ga:0,pts:0});
+  allMatches.filter(m => m.group === grpName && m.score).forEach(m => {
+    const h = t(m.team1), a = t(m.team2);
+    const [hg, ag] = m.score.ft;
+    if (!stats[h] || !stats[a]) return;
+    stats[h].gf+=hg; stats[h].ga+=ag; stats[h].p++;
+    stats[a].gf+=ag; stats[a].ga+=hg; stats[a].p++;
+    if (hg>ag){ stats[h].w++; stats[h].pts+=3; stats[a].l++; }
+    else if (hg<ag){ stats[a].w++; stats[a].pts+=3; stats[h].l++; }
+    else { stats[h].d++; stats[h].pts++; stats[a].d++; stats[a].pts++; }
+  });
+  return Object.values(stats).sort((a,b)=>b.pts-a.pts||(b.gf-b.ga)-(a.gf-a.ga)||b.gf-a.gf);
+}
+
+function getAllThirds() {
+  const thirds = [];
+  Object.keys(GT).forEach(grp => {
+    const rows = calcStandings(grp);
+    if (rows.length >= 3) thirds.push({grp, ...rows[2]});
+  });
+  return thirds.sort((a,b)=>b.pts-a.pts||(b.gf-b.ga)-(a.gf-a.ga)||b.gf-a.gf);
+}
+
+// Resolve knockout slot code (e.g. "1A" → actual team name if group complete)
+function resolveSlot(code) {
+  if (!code) return '';
+  // openfootball uses "1A", "2B", "3A/B/C/D/F" format
+  const simple = code.match(/^(\d)([A-L])$/);
+  if (simple) {
+    const pos = parseInt(simple[1]) - 1;
+    const grpName = 'Group ' + simple[2];
+    const rows = calcStandings(grpName);
+    const allDone = rows.every(r => r.p === 3);
+    if (allDone && rows[pos]) return rows[pos].team;
+  }
+  // Multi-third like "3A/B/C/D/F" — can't resolve until all groups done, keep as is
+  return code;
+}
+
+// ============================================================
+// RENDER
+// ============================================================
+function renderAll() {
+  renderGroupTable();
+  renderStandings();
+  renderThirds();
+  renderKnockout();
+  renderBetTable();
+}
+
+function renderGroupTable() {
+  const gms = allMatches.filter(m => m.group);
+  document.getElementById('gtb').innerHTML = gms.map(m => {
+    const bjt = toBJT(m.date, m.time);
+    const ht = m.score ? m.score.ht.join('-') : '';
+    const ft = m.score ? m.score.ft.join('-') : '';
+    let res = '';
+    if (m.score) {
+      const [h,a] = m.score.ft;
+      res = h>a?'W':h<a?'L':'D';
+    }
+    const isNew = m.score && !m._seen;
+    if (m.score) m._seen = true;
+    return `<tr>
+      <td class="dt">${fmtDate(m.date)}</td>
+      <td class="dt">${wday(m.date)}</td>
+      <td style="color:#FFD700;font-weight:600">${bjt}</td>
+      <td><span class="gl">${groupShort(m.group)}</span></td>
+      <td class="dc">${groundShort(m.ground)}</td>
+      <td style="font-weight:600;text-align:left">${t(m.team1)}</td>
+      <td style="text-align:left">${t(m.team2)}</td>
+      <td>${ht?`<span class="sb">${ht}</span>`:'<span style="color:var(--mu)">-</span>'}</td>
+      <td>${ft?`<span class="sb sf">${ft}</span>`:'<span style="color:var(--mu)">-</span>'}</td>
+      <td>${res?`<span class="rb ${res}">${res==='W'?'主胜':res==='D'?'平局':'客胜'}</span>${isNew?'<span class="new-badge">NEW</span>':''}`:'<span style="color:var(--mu)">-</span>'}</td>
+    </tr>`;
+  }).join('');
+}
+
+function renderStandings() {
+  document.getElementById('sg').innerHTML = Object.keys(GT).map(grp => {
+    const rows = calcStandings(grp);
+    return `<div class="gb">
+      <div class="gbh">⚽ ${grp.replace('Group','第')} 组</div>
+      <table>
+        <thead><tr><th>#</th><th style="text-align:left">球队</th><th>W</th><th>D</th><th>L</th><th>进/失</th><th>积分</th></tr></thead>
+        <tbody>${rows.map((r,i)=>`<tr>
+          <td style="color:${i<2?'#FFD700':'var(--mu)'};font-weight:700">${i+1}</td>
+          <td style="text-align:left;font-weight:${i<2?700:400}">${r.team}</td>
+          <td>${r.w}</td><td>${r.d}</td><td>${r.l}</td>
+          <td>${r.gf}/${r.ga}</td>
+          <td style="color:var(--gold);font-weight:700">${r.pts}</td>
+        </tr>`).join('')}</tbody>
+      </table>
+    </div>`;
+  }).join('');
+}
+
+function renderThirds() {
+  const thirds = getAllThirds();
+  document.getElementById('td3').innerHTML = `
+    <div style="padding:7px 9px 0;font-size:10px;color:var(--mu)">前8名晋级32强淘汰赛</div>
+    <div class="tg">
+      ${thirds.map((t,i)=>`<div class="tc">
+        <div class="tr ${i<8?'rt':'ro'}">${i+1}</div>
+        <div style="flex:1;min-width:0">
+          <div style="font-weight:600;font-size:11px">${t.team}</div>
+          <div style="font-size:10px;color:var(--mu)">${t.grp.replace('Group','第')}组 · ${t.pts}分 · ${t.gf}/${t.ga}</div>
+        </div>
+        <div style="font-size:10px;color:${i<8?'#81C784':'var(--mu)'};">${i<8?'✅':'❌'}</div>
+      </div>`).join('')}
+    </div>`;
+}
+
+function renderKnockout() {
+  const kms = allMatches.filter(m => !m.group);
+  let lastRound = '';
+  document.getElementById('ktb').innerHTML = kms.map(m => {
+    let rh = '';
+    const roundName = rn(m.round);
+    if (roundName !== lastRound) { lastRound = roundName; rh = `<tr><td colspan="11" class="krh">🏆 ${roundName}</td></tr>`; }
+    const bjt = toBJT(m.date, m.time);
+    const home = resolveSlot(m.team1);
+    const away = resolveSlot(m.team2 || '');
+    const homeResolved = home !== m.team1;
+    const awayResolved = m.team2 && away !== m.team2;
+    const ht = m.score ? m.score.ht.join('-') : '';
+    const ft = m.score ? m.score.ft.join('-') : '';
+    let res90 = '';
+    if (m.score) { const [h,a]=m.score.ft; res90=h>a?'主胜':h<a?'客胜':'平局'; }
+    const pens = m.score && m.score.p ? m.score.p.join('-') : '';
+    return rh + `<tr>
+      <td style="color:#FFD700;font-weight:700">${m.num||''}</td>
+      <td><span class="gl">${roundName}</span></td>
+      <td class="dt">${fmtDate(m.date)}</td>
+      <td style="color:#FFD700;font-weight:600">${bjt}</td>
+      <td class="dc">${groundShort(m.ground)}</td>
+      <td style="font-weight:600;color:${homeResolved?'#A5D6A7':'var(--tm)'}">${home}</td>
+      <td style="font-weight:600;color:${awayResolved?'#A5D6A7':'var(--tm)'}">${away||'—'}</td>
+      <td>${ht?`<span class="sb">${ht}</span>`:'-'}</td>
+      <td>${ft?`<span class="sb sf">${ft}</span>`:'-'}</td>
+      <td>${res90?`<span class="rb ${res90==='主胜'?'W':res90==='平局'?'D':'L'}">${res90}</span>`:'-'}</td>
+      <td>${pens||'-'}</td>
+    </tr>`;
+  }).join('');
+}
+
+// ============================================================
+// BETTING
+// ============================================================
+const ODDS_CACHE = {};
+function getOdds(key){ if(!ODDS_CACHE[key]) ODDS_CACHE[key]={w:(1.7+Math.random()*3).toFixed(2),d:(2.8+Math.random()*1.5).toFixed(2),l:(1.4+Math.random()*4).toFixed(2)}; return ODDS_CACHE[key]; }
+
+function renderBetTable() {
+  const upcoming = allMatches.filter(m => m.group && !m.score).slice(0,20);
+  document.getElementById('bettb').innerHTML = upcoming.map(m => {
+    const o = getOdds(m.team1+'v'+m.team2);
+    const h = t(m.team1), a = t(m.team2);
+    return `<tr>
+      <td class="dt">${fmtDate(m.date)}<br>${toBJT(m.date,m.time)}</td>
+      <td style="font-weight:600;text-align:left">${h}<br><span style="color:var(--mu)">vs</span> ${a}</td>
+      <td><span class="ob" onclick="addSlip('${m.team1}','win','${h}胜',${o.w})">${o.w}</span></td>
+      <td><span class="ob" onclick="addSlip('${m.team1}','draw','平局',${o.d})">${o.d}</span></td>
+      <td><span class="ob" onclick="addSlip('${m.team1}','lose','${a}胜',${o.l})">${o.l}</span></td>
+      <td><button class="bbt" onclick="addSlip('${m.team1}','win','${h}胜',${o.w})">投注</button></td>
+    </tr>`;
+  }).join('') || '<tr><td colspan="6" style="padding:12px;color:var(--mu);text-align:center">暂无可投注比赛（所有比赛已结束或数据加载中）</td></tr>';
+}
+
+let slip = [];
+let history = JSON.parse(localStorage.getItem('wc26_bets') || '[]');
+
+function addSlip(id, type, label, odds) {
+  const i = slip.findIndex(s => s.id === id);
+  if (i >= 0) slip.splice(i, 1);
+  slip.push({id, type, label, odds});
+  renderSlip();
+}
+function renderSlip() {
+  const el = document.getElementById('spitems');
+  const ft = document.getElementById('spft');
+  if (!slip.length) { el.innerHTML='<div style="padding:12px;text-align:center;color:var(--mu);font-size:11px">投注单为空</div>'; ft.style.display='none'; return; }
+  ft.style.display='flex';
+  el.innerHTML = slip.map((s,i) => `
+    <div class="spit">
+      <div style="display:flex;justify-content:space-between">
+        <span style="font-size:11px;font-weight:600">${s.id} · <span style="color:#CE93D8">${s.label}</span></span>
+        <button onclick="removeSlip(${i})" style="background:none;border:none;color:var(--mu);cursor:pointer;font-size:13px">✕</button>
+      </div>
+      <div style="color:var(--gold);font-size:11px;margin-top:2px">赔率 ${s.odds}</div>
+    </div>`).join('');
+  updateExp();
+}
+function removeSlip(i){ slip.splice(i,1); renderSlip(); }
+function clearSlip(){ slip=[]; renderSlip(); }
+function updateExp(){
+  const amt = parseFloat(document.getElementById('bamt').value)||0;
+  const type = document.getElementById('btype').value;
+  const exp = type==='single' && slip.length>0 ? amt*slip[slip.length-1].odds : amt*slip.reduce((p,s)=>p*s.odds,1);
+  document.getElementById('expw').textContent = '¥'+exp.toFixed(2);
+}
+document.getElementById('bamt').addEventListener('input', updateExp);
+document.getElementById('btype').addEventListener('change', updateExp);
+function confirmBet(){
+  if (!slip.length){ alert('请先添加投注项目'); return; }
+  const amt = parseFloat(document.getElementById('bamt').value)||10;
+  const type = document.getElementById('btype').value;
+  history.unshift({id:Date.now(),time:new Date().toLocaleString('zh-CN'),slip:[...slip],amount:amt,type,result:'pending',win:0});
+  localStorage.setItem('wc26_bets', JSON.stringify(history));
+  slip=[]; renderSlip(); renderHistory(); updateStats();
+  toast('✅ 投注成功！赛果出来后自动结算。');
+}
+function renderHistory(){
+  const c = document.getElementById('bhist');
+  if (!history.length){ c.innerHTML='<div style="color:var(--mu);font-size:11px;text-align:center;padding:12px">暂无记录</div>'; return; }
+  c.innerHTML = history.map(b=>`
+    <div style="background:var(--bc2);border:1px solid var(--bg3);border-radius:7px;margin-bottom:7px;padding:8px 10px">
+      <div style="display:flex;justify-content:space-between;margin-bottom:4px">
+        <span style="font-size:10px;color:var(--mu)">${b.time}</span>
+        <span style="font-size:10px;font-weight:700;color:${b.result==='won'?'#81C784':b.result==='lost'?'#EF9A9A':'#FFD700'}">${b.result==='pending'?'⏳待结算':b.result==='won'?'✅中奖':'❌未中'}</span>
+      </div>
+      ${b.slip.map(s=>`<div style="font-size:10px;margin-bottom:1px">${s.id} · <span style="color:#CE93D8">${s.label}</span> · <span style="color:var(--gold)">${s.odds}</span></div>`).join('')}
+      <div style="margin-top:3px;font-size:10px">投注: <span style="color:var(--gold)">¥${b.amount}</span>${b.result==='won'?` · 奖金: <span style="color:#81C784">¥${b.win.toFixed(2)}</span>`:''}</div>
+    </div>`).join('');
+}
+function updateStats(){
+  const tot = history.reduce((s,b)=>s+b.amount,0);
+  const won = history.filter(b=>b.result==='won').reduce((s,b)=>s+b.win,0);
+  document.getElementById('st-tot').textContent='¥'+tot;
+  document.getElementById('st-won').textContent='¥'+won.toFixed(2);
+  const pnl = won-tot;
+  const pe = document.getElementById('st-pnl');
+  pe.textContent=(pnl>=0?'+':'')+'¥'+pnl.toFixed(2);
+  pe.style.color=pnl>=0?'#81C784':'#EF9A9A';
+}
+
+// ============================================================
+// SIMULATION
+// ============================================================
+let sims = JSON.parse(localStorage.getItem('wc26_sims')||'[]');
+function newSim(){ document.getElementById('mo-sim').classList.add('op'); }
+function closeMo(id){ document.getElementById(id).classList.remove('op'); }
+function createSim(){
+  const name = document.getElementById('simname').value.trim()||'模拟 '+(sims.length+1);
+  sims.unshift({id:Date.now(),name,created:new Date().toLocaleString('zh-CN'),matches:JSON.parse(JSON.stringify(allMatches))});
+  localStorage.setItem('wc26_sims',JSON.stringify(sims));
+  closeMo('mo-sim');
+  document.getElementById('simname').value='';
+  renderSimList();
+}
+function renderSimList(){
+  const c = document.getElementById('simlist');
+  if(!sims.length){c.innerHTML='<div style="text-align:center;padding:34px;color:var(--mu)"><div style="font-size:30px;margin-bottom:7px">🎮</div><p>暂无模拟，点击上方新建</p></div>';return;}
+  c.innerHTML = sims.map((s,si)=>`
+    <div class="si">
+      <div class="sih">
+        <div><div style="font-weight:600;color:var(--gold);font-size:12px">🎮 ${s.name}</div><div style="font-size:10px;color:var(--mu)">${s.created}</div></div>
+        <div style="display:flex;gap:5px">
+          <button class="btn bb" style="padding:3px 9px;font-size:10px;border-radius:9px" onclick="toggleSim(${si})">展开</button>
+          <button class="btn br" style="padding:3px 8px;font-size:10px;border-radius:9px" onclick="delSim(${si})">删除</button>
+        </div>
+      </div>
+      <div id="sd-${si}" style="display:none">
+        <div style="padding:5px 9px;border-bottom:1px solid var(--bg2);font-size:10px;color:var(--mu)">✅已有赛果锁定 · 未开赛可点击预测</div>
+        <div class="sw"><table>
+          <thead><tr><th>日期</th><th>主队</th><th>客队</th><th>组</th><th>半场</th><th>全场</th><th>结果</th></tr></thead>
+          <tbody>${s.matches.filter(m=>m.group).map((m,mi)=>`
+            <tr ${!m.score?'style="cursor:pointer"':''} onclick="${!m.score?`editSim(${si},${mi})`:''}" title="${!m.score?'点击预测':'已有赛果'}">
+              <td class="dt">${fmtDate(m.date)}</td>
+              <td style="font-weight:600;text-align:left;${m.score?'opacity:.65':''}">${t(m.team1)}</td>
+              <td style="text-align:left;${m.score?'opacity:.65':''}">${t(m.team2)}</td>
+              <td><span class="gl">${groupShort(m.group)}</span></td>
+              <td>${m.score?`<span class="sb">${m.score.ht.join('-')}</span>`:'<span style="color:#FFD700;font-size:10px">点击预测</span>'}</td>
+              <td>${m.score?`<span class="sb sf">${m.score.ft.join('-')}</span>`:''}</td>
+              <td>${m.score?(()=>{const[h,a]=m.score.ft;return`<span class="rb ${h>a?'W':h<a?'L':'D'}">${h>a?'主胜':h<a?'客胜':'平局'}</span>`})():''}</td>
+            </tr>`).join('')}</tbody>
+        </table></div>
+      </div>
+    </div>`).join('');
+}
+function toggleSim(i){const d=document.getElementById('sd-'+i);d.style.display=d.style.display==='none'?'block':'none';}
+function editSim(si,mi){
+  const m = sims[si].matches.filter(mm=>mm.group)[mi];
+  if(m.score) return;
+  const ft = prompt(`预测：${t(m.team1)} vs ${t(m.team2)}\n请输入全场比分（例如 2-1）：`,'');
+  if(ft && /^\d+-\d+$/.test(ft)){
+    const[h,a]=ft.split('-').map(Number);
+    m.score={ft:[h,a],ht:[Math.min(h,1),Math.min(a,1)]};
+    sims[si].matches.filter(mm=>mm.group)[mi]=m;
+    localStorage.setItem('wc26_sims',JSON.stringify(sims));
+    renderSimList();
+  }
+}
+function delSim(i){if(!confirm('确认删除？'))return;sims.splice(i,1);localStorage.setItem('wc26_sims',JSON.stringify(sims));renderSimList();}
+
+// ============================================================
+// UI HELPERS
+// ============================================================
+function toggleSec(hdr){
+  const b=hdr.nextElementSibling, btn=hdr.querySelector('.tb');
+  if(b.classList.contains('cl')){b.classList.remove('cl');btn.textContent='收起 ▲';}
+  else{b.classList.add('cl');btn.textContent='展开 ▼';}
+}
+function switchPage(id){
+  document.querySelectorAll('.pg').forEach(p=>p.classList.remove('on'));
+  document.querySelectorAll('.tab').forEach(t=>t.classList.remove('on'));
+  document.getElementById('pg-'+id).classList.add('on');
+  ['home','sim','bet'].forEach((n,i)=>{if(n===id)document.querySelectorAll('.tab')[i].classList.add('on');});
+}
+function toast(msg){
+  const el=document.createElement('div');
+  el.textContent=msg;
+  el.style.cssText='position:fixed;bottom:18px;left:50%;transform:translateX(-50%);background:#1A4A20;border:1px solid var(--gold);color:var(--gold);padding:7px 16px;border-radius:18px;font-size:11px;z-index:300;pointer-events:none';
+  document.body.appendChild(el);
+  setTimeout(()=>{el.style.transition='opacity .3s';el.style.opacity='0';setTimeout(()=>el.remove(),300);},2000);
+}
+document.getElementById('mo-sim').addEventListener('click',function(e){if(e.target===this)closeMo('mo-sim');});
+
+// ============================================================
+// INIT — load cache then auto-refresh
+// ============================================================
+loadFromCache();
+renderAll();
+renderSimList();
+renderHistory();
+updateStats();
+// Auto-fetch on load
+doRefresh();
+</script>
+
+<!-- ============================================================
+     PWA - Service Worker 注册
+     ============================================================ -->
+<script>
+if ('serviceWorker' in navigator) {
+  window.addEventListener('load', function() {
+    navigator.serviceWorker.register('sw.js').then(function(reg) {
+      console.log('[PWA] Service Worker 注册成功:', reg.scope);
+    }).catch(function(err) {
+      console.log('[PWA] Service Worker 注册失败:', err);
+    });
+  });
+}
+
+// 检测是否以 standalone 模式运行（已安装为 PWA）
+if (window.matchMedia('(display-mode: standalone)').matches || window.navigator.standalone === true) {
+  document.documentElement.classList.add('pwa-mode');
+}
+</script>
+
+</body>
+</html>
