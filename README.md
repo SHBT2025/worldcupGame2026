@@ -1,5 +1,6 @@
-一、项目概述
-
+一、项目概述 
+项目网址 https://shbt2025.github.io/worldcupGame2026/
+默认演示视频（1.0版本）https://www.youtube.com/watch?v=wPX35GBMQSw
 这是一个**2026年世界杯竞猜游戏**的HTML单页应用，包含三大核心功能模块：
 
 | 模块 | 页面ID | 功能 |
