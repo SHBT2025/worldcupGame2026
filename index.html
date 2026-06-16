@@ -140,7 +140,7 @@ tr:hover td{background:rgba(255,215,0,.04)}
     <div class="sb">
       <div class="sw">
         <table>
-          <thead><tr><th>日期</th><th>星期</th><th>时间(北京)</th><th>组别</th><th>场地</th><th>主队</th><th>客队</th><th>半场</th><th>全场</th><th>结果</th></tr></thead>
+          <thead><tr><th>日期</th><th>星期</th><th>时间(北京)</th><th>组别</th><th>主队</th><th>客队</th><th>半场</th><th>全场</th><th>结果</th></tr></thead>
           <tbody id="gtb"></tbody>
         </table>
       </div>
@@ -174,7 +174,7 @@ tr:hover td{background:rgba(255,215,0,.04)}
     <div class="sb">
       <div class="sw">
         <table>
-          <thead><tr><th>场序</th><th>轮次</th><th>日期</th><th>时间(北京)</th><th>场地</th><th>主队</th><th>客队</th><th>半场</th><th>全场</th><th>90分钟</th><th>点球</th></tr></thead>
+          <thead><tr><th>场序</th><th>轮次</th><th>日期</th><th>时间(北京)</th><th>主队</th><th>客队</th><th>半场</th><th>全场</th><th>90分钟</th><th>点球</th></tr></thead>
           <tbody id="ktb"></tbody>
         </table>
       </div>
@@ -462,7 +462,6 @@ function renderGroupTable() {
       <td class="dt">${wday(m.date)}</td>
       <td style="color:#FFD700;font-weight:600">${bjt}</td>
       <td><span class="gl">${groupShort(m.group)}</span></td>
-      <td class="dc">${groundShort(m.ground)}</td>
       <td style="font-weight:600;text-align:left">${t(m.team1)}</td>
       <td style="text-align:left">${t(m.team2)}</td>
       <td>${ht?`<span class="sb">${ht}</span>`:'<span style="color:var(--mu)">-</span>'}</td>
@@ -513,7 +512,7 @@ function renderKnockout() {
   document.getElementById('ktb').innerHTML = kms.map(m => {
     let rh = '';
     const roundName = rn(m.round);
-    if (roundName !== lastRound) { lastRound = roundName; rh = `<tr><td colspan="11" class="krh">🏆 ${roundName}</td></tr>`; }
+    if (roundName !== lastRound) { lastRound = roundName; rh = `<tr><td colspan="9" class="krh">🏆 ${roundName}</td></tr>`; }
     const bjt = toBJT(m.date, m.time);
     const home = resolveSlot(m.team1);
     const away = resolveSlot(m.team2 || '');
@@ -529,7 +528,6 @@ function renderKnockout() {
       <td><span class="gl">${roundName}</span></td>
       <td class="dt">${fmtDate(m.date)}</td>
       <td style="color:#FFD700;font-weight:600">${bjt}</td>
-      <td class="dc">${groundShort(m.ground)}</td>
       <td style="font-weight:600;color:${homeResolved?'#A5D6A7':'var(--tm)'}">${home}</td>
       <td style="font-weight:600;color:${awayResolved?'#A5D6A7':'var(--tm)'}">${away||'—'}</td>
       <td>${ht?`<span class="sb">${ht}</span>`:'-'}</td>
@@ -737,7 +735,7 @@ function renderSimKnockout(s) {
   const kms = s.matches.filter(m => !m.group);
   if(!kms.length) return '<div style="color:var(--mu);font-size:11px;text-align:center;padding:8px">暂无淘汰赛数据</div>';
   let lastRound = '';
-  let html = '<table><thead><tr><th>场序</th><th>轮次</th><th>日期</th><th>时间(北京)</th><th>场地</th><th>主队</th><th>客队</th><th>半场</th><th>全场</th><th>90分钟</th></tr></thead><tbody>';
+  let html = '<table><thead><tr><th>场序</th><th>轮次</th><th>日期</th><th>时间(北京)</th><th>主队</th><th>客队</th><th>半场</th><th>全场</th><th>90分钟</th></tr></thead><tbody>';
   kms.forEach(m => {
     const roundName = rn(m.round);
     if (roundName !== lastRound) { lastRound = roundName; html += `<tr><td colspan="10" class="krh">🏆 ${roundName}</td></tr>`; }
@@ -755,7 +753,6 @@ function renderSimKnockout(s) {
       <td><span class="gl">${roundName}</span></td>
       <td class="dt">${fmtDate(m.date)}</td>
       <td style="color:#FFD700;font-weight:600">${bjt}</td>
-      <td class="dc">${groundShort(m.ground)}</td>
       <td style="font-weight:600;color:${homeResolved?'#A5D6A7':'var(--tm)'}">${home}</td>
       <td style="font-weight:600;color:${awayResolved?'#A5D6A7':'var(--tm)'}">${away||'—'}</td>
       <td>${ht?`<span class="sb">${ht}</span>`:'-'}</td>
