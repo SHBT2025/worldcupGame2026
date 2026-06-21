@@ -27,7 +27,6 @@ body{background:var(--bg);color:var(--tm);font-family:'PingFang SC','Microsoft Y
 .hdr h1{font-size:19px;color:var(--gold);letter-spacing:2px;font-weight:700;text-shadow:0 0 16px rgba(255,215,0,.4)}
 .hdr p{font-size:11px;color:var(--mu);margin-top:3px}
 .nav{display:flex;background:#0D1520;border-bottom:1px solid var(--bg2);overflow-x:auto}
-}
 .tab{flex:1;min-width:88px;padding:11px 6px;text-align:center;cursor:pointer;font-size:12px;color:var(--mu);border-bottom:3px solid transparent;white-space:nowrap;transition:.2s}
 .tab.on{color:var(--gold);border-bottom-color:var(--gold);background:rgba(255,215,0,.04)}
 .pg{display:none;max-width:980px;margin:0 auto;padding:10px}
@@ -102,8 +101,9 @@ tr:hover td{background:rgba(255,215,0,.04)}
 .mf input,.mf select{width:100%;background:var(--bc2);border:1px solid rgba(255,255,255,.15);color:var(--tm);padding:6px 9px;border-radius:5px;font-size:13px}
 .ma{display:flex;gap:7px;margin-top:12px}
 .disc{margin:14px 0 6px;background:rgba(255,215,0,.03);border:1px solid rgba(255,215,0,.12);border-radius:7px;padding:9px 12px;font-size:10px;color:var(--mu);text-align:center;line-height:1.6}
-.new-badge{background:rgba(46,125,50,.35);color:#81C784;border:1px solid rgba(81,200,100,.4);border-radius:10px;padding:1px 6px;font-size:10px;margin-left:5px;animation:fadein .5s}
 @keyframes fadein{from{opacity:0;transform:scale(.8)}to{opacity:1;transform:scale(1)}}
+@keyframes blink-row{0%,100%{background-color:rgba(255,215,0,.08)}50%{background-color:rgba(255,215,0,.02)}}
+.blink-match{animation:blink-row 2s ease-in-out infinite}
 ::-webkit-scrollbar{width:5px;height:5px}
 ::-webkit-scrollbar-track{background:var(--bg)}
 ::-webkit-scrollbar-thumb{background:rgba(255,215,0,.25);border-radius:3px}
@@ -283,6 +283,19 @@ function fmtDate(dateStr) {
   d.setUTCDate(d.getUTCDate() + 1); // 加1天修正北京时间
   return `${d.getUTCMonth()+1}月${d.getUTCDate()}日`;
 }
+function isWithin24Hours(dateStr, timeStr) {
+  const m = timeStr.match(/(\d+):(\d+)\s+UTC([+-]\d+)/);
+  if (!m) return false;
+  const [,h,mi,off] = m;
+  const utcH = parseInt(h) - parseInt(off);
+  const d = new Date(dateStr + 'T12:00:00Z');
+  d.setUTCDate(d.getUTCDate() + 1);
+  d.setUTCHours(utcH, parseInt(mi), 0, 0);
+  const now = new Date();
+  const diffMs = now - d;
+  const diffHours = diffMs / (1000 * 60 * 60);
+  return diffHours >= -24 && diffHours <= 24;
+}
 function groundShort(g) {
   return g.replace(' (Foxborough)','').replace(' (Inglewood)','').replace(' (East Rutherford)','')
     .replace(' (Miami Gardens)','').replace(' (Santa Clara)','')
@@ -373,6 +386,7 @@ async function doRefresh() {
   ri.className = '';
   ri.textContent = '🔄';
   btn.disabled = false;
+  invalidateSlotCache();
   renderAll();
 }
 
@@ -417,21 +431,134 @@ function getAllThirds() {
   return thirds.sort((a,b)=>b.pts-a.pts||(b.gf-b.ga)-(a.gf-a.ga)||b.gf-a.gf);
 }
 
-// Resolve knockout slot code (e.g. "1A" → actual team name if group complete)
-function resolveSlot(code) {
-  if (!code) return '';
-  // openfootball uses "1A", "2B", "3A/B/C/D/F" format
-  const simple = code.match(/^(\d)([A-L])$/);
-  if (simple) {
-    const pos = parseInt(simple[1]) - 1;
-    const grpName = 'Group ' + simple[2];
-    const rows = calcStandings(grpName);
-    const allDone = rows.every(r => r.p === 3);
-    if (allDone && rows[pos]) return rows[pos].team;
-  }
-  // Multi-third like "3A/B/C/D/F" — can't resolve until all groups done, keep as is
-  return code;
+// ============================================================
+// THIRD-PLACE COMBINATION TABLE (official FIFA 2026 assignment)
+// Source: en.wikipedia.org/wiki/Template:2026_FIFA_World_Cup_third-place_table
+// Key   = the 8 advancing third-place group letters, sorted
+// Value = 8 group letters assigned to each host winner,
+//         in host order [1A, 1B, 1D, 1E, 1G, 1I, 1K, 1L]
+// ============================================================
+const THIRD_PLACE_TABLE={"ABCDEFGH":"HGBCAFDE","ABCDEFGI":"CGBDAFEI","ABCDEFGJ":"CGBDAFEJ","ABCDEFGK":"CGBDAFEK","ABCDEFGL":"CGBDAFLE","ABCDEFHI":"HEBCAFDI","ABCDEFHJ":"HJBCAFDE","ABCDEFHK":"HEBCAFDK","ABCDEFHL":"HFBCADLE","ABCDEFIJ":"CJBDAFEI","ABCDEFIK":"CEBDAFIK","ABCDEFIL":"CEBDAFLI","ABCDEFJK":"CJBDAFEK","ABCDEFJL":"CJBDAFLE","ABCDEFKL":"CEBDAFLK","ABCDEGHI":"HGBCADEI","ABCDEGHJ":"HGBCADEJ","ABCDEGHK":"HGBCADEK","ABCDEGHL":"HGBCADLE","ABCDEGIJ":"EGBCADIJ","ABCDEGIK":"EGBCADIK","ABCDEGIL":"EGBCADLI","ABCDEGJK":"EGBCADJK","ABCDEGJL":"EGBCADLJ","ABCDEGKL":"EGBCADLK","ABCDEHIJ":"HJBCADEI","ABCDEHIK":"HEBCADIK","ABCDEHIL":"HEBCADLI","ABCDEHJK":"HJBCADEK","ABCDEHJL":"HJBCADLE","ABCDEHKL":"HEBCADLK","ABCDEIJK":"EJBCADIK","ABCDEIJL":"EJBCADLI","ABCDEIKL":"EIBCADLK","ABCDEJKL":"EJBCADLK","ABCDFGHI":"HGBCAFDI","ABCDFGHJ":"HGBCAFDJ","ABCDFGHK":"HGBCAFDK","ABCDFGHL":"CGBDAFLH","ABCDFGIJ":"CGBDAFIJ","ABCDFGIK":"CGBDAFIK","ABCDFGIL":"CGBDAFLI","ABCDFGJK":"CGBDAFJK","ABCDFGJL":"CGBDAFLJ","ABCDFGKL":"CGBDAFLK","ABCDFHIJ":"HJBCAFDI","ABCDFHIK":"HFBCADIK","ABCDFHIL":"HFBCADLI","ABCDFHJK":"HJBCAFDK","ABCDFHJL":"CJBDAFLH","ABCDFHKL":"HFBCADLK","ABCDFIJK":"CJBDAFIK","ABCDFIJL":"CJBDAFLI","ABCDFIKL":"CIBDAFLK","ABCDFJKL":"CJBDAFLK","ABCDGHIJ":"HGBCADIJ","ABCDGHIK":"HGBCADIK","ABCDGHIL":"HGBCADLI","ABCDGHJK":"HGBCADJK","ABCDGHJL":"HGBCADLJ","ABCDGHKL":"HGBCADLK","ABCDGIJK":"CJBDAGIK","ABCDGIJL":"CJBDAGLI","ABCDGIKL":"IGBCADLK","ABCDGJKL":"CJBDAGLK","ABCDHIJK":"HJBCADIK","ABCDHIJL":"HJBCADLI","ABCDHIKL":"HIBCADLK","ABCDHJKL":"HJBCADLK","ABCDIJKL":"IJBCADLK","ABCEFGHI":"HGBCAFEI","ABCEFGHJ":"HGBCAFEJ","ABCEFGHK":"HGBCAFEK","ABCEFGHL":"HGBCAFLE","ABCEFGIJ":"EGBCAFIJ","ABCEFGIK":"EGBCAFIK","ABCEFGIL":"EGBCAFLI","ABCEFGJK":"EGBCAFJK","ABCEFGJL":"EGBCAFLJ","ABCEFGKL":"EGBCAFLK","ABCEFHIJ":"HJBCAFEI","ABCEFHIK":"HEBCAFIK","ABCEFHIL":"HEBCAFLI","ABCEFHJK":"HJBCAFEK","ABCEFHJL":"HJBCAFLE","ABCEFHKL":"HEBCAFLK","ABCEFIJK":"EJBCAFIK","ABCEFIJL":"EJBCAFLI","ABCEFIKL":"EIBCAFLK","ABCEFJKL":"EJBCAFLK","ABCEGHIJ":"HJBCAGEI","ABCEGHIK":"EGBCAHIK","ABCEGHIL":"EGBCAHLI","ABCEGHJK":"HJBCAGEK","ABCEGHJL":"HJBCAGLE","ABCEGHKL":"EGBCAHLK","ABCEGIJK":"EJBCAGIK","ABCEGIJL":"EJBCAGLI","ABCEGIKL":"EGBAICLK","ABCEGJKL":"EJBCAGLK","ABCEHIJK":"EJBCAHIK","ABCEHIJL":"EJBCAHLI","ABCEHIKL":"EIBCAHLK","ABCEHJKL":"EJBCAHLK","ABCEIJKL":"EJBAICLK","ABCFGHIJ":"HGBCAFIJ","ABCFGHIK":"HGBCAFIK","ABCFGHIL":"HGBCAFLI","ABCFGHJK":"HGBCAFJK","ABCFGHJL":"HGBCAFLJ","ABCFGHKL":"HGBCAFLK","ABCFGIJK":"CJBFAGIK","ABCFGIJL":"CJBFAGLI","ABCFGIKL":"IGBCAFLK","ABCFGJKL":"CJBFAGLK","ABCFHIJK":"HJBCAFIK","ABCFHIJL":"HJBCAFLI","ABCFHIKL":"HIBCAFLK","ABCFHJKL":"HJBCAFLK","ABCFIJKL":"IJBCAFLK","ABCGHIJK":"HJBCAGIK","ABCGHIJL":"HJBCAGLI","ABCGHIKL":"IGBCAHLK","ABCGHJKL":"HJBCAGLK","ABCGIJKL":"IJBCAGLK","ABCHIJKL":"IJBCAHLK","ABDEFGHI":"HGBDAFEI","ABDEFGHJ":"HGBDAFEJ","ABDEFGHK":"HGBDAFEK","ABDEFGHL":"HGBDAFLE","ABDEFGIJ":"EGBDAFIJ","ABDEFGIK":"EGBDAFIK","ABDEFGIL":"EGBDAFLI","ABDEFGJK":"EGBDAFJK","ABDEFGJL":"EGBDAFLJ","ABDEFGKL":"EGBDAFLK","ABDEFHIJ":"HJBDAFEI","ABDEFHIK":"HEBDAFIK","ABDEFHIL":"HEBDAFLI","ABDEFHJK":"HJBDAFEK","ABDEFHJL":"HJBDAFLE","ABDEFHKL":"HEBDAFLK","ABDEFIJK":"EJBDAFIK","ABDEFIJL":"EJBDAFLI","ABDEFIKL":"EIBDAFLK","ABDEFJKL":"EJBDAFLK","ABDEGHIJ":"HJBDAGEI","ABDEGHIK":"EGBDAHIK","ABDEGHIL":"EGBDAHLI","ABDEGHJK":"HJBDAGEK","ABDEGHJL":"HJBDAGLE","ABDEGHKL":"EGBDAHLK","ABDEGIJK":"EJBDAGIK","ABDEGIJL":"EJBDAGLI","ABDEGIKL":"EGBAIDLK","ABDEGJKL":"EJBDAGLK","ABDEHIJK":"EJBDAHIK","ABDEHIJL":"EJBDAHLI","ABDEHIKL":"EIBDAHLK","ABDEHJKL":"EJBDAHLK","ABDEIJKL":"EJBAIDLK","ABDFGHIJ":"HGBDAFIJ","ABDFGHIK":"HGBDAFIK","ABDFGHIL":"HGBDAFLI","ABDFGHJK":"HGBDAFJK","ABDFGHJL":"HGBDAFLJ","ABDFGHKL":"HGBDAFLK","ABDFGIJK":"FJBDAGIK","ABDFGIJL":"FJBDAGLI","ABDFGIKL":"IGBDAFLK","ABDFGJKL":"FJBDAGLK","ABDFHIJK":"HJBDAFIK","ABDFHIJL":"HJBDAFLI","ABDFHIKL":"HIBDAFLK","ABDFHJKL":"HJBDAFLK","ABDFIJKL":"IJBDAFLK","ABDGHIJK":"HJBDAGIK","ABDGHIJL":"HJBDAGLI","ABDGHIKL":"IGBDAHLK","ABDGHJKL":"HJBDAGLK","ABDGIJKL":"IJBDAGLK","ABDHIJKL":"IJBDAHLK","ABEFGHIJ":"HJBFAGEI","ABEFGHIK":"EGBFAHIK","ABEFGHIL":"EGBFAHLI","ABEFGHJK":"HJBFAGEK","ABEFGHJL":"HJBFAGLE","ABEFGHKL":"EGBFAHLK","ABEFGIJK":"EJBFAGIK","ABEFGIJL":"EJBFAGLI","ABEFGIKL":"EGBAIFLK","ABEFGJKL":"EJBFAGLK","ABEFHIJK":"EJBFAHIK","ABEFHIJL":"EJBFAHLI","ABEFHIKL":"EIBFAHLK","ABEFHJKL":"EJBFAHLK","ABEFIJKL":"EJBAIFLK","ABEGHIJK":"EJBAHGIK","ABEGHIJL":"EJBAHGLI","ABEGHIKL":"EGBAIHLK","ABEGHJKL":"EJBAHGLK","ABEGIJKL":"EJBAIGLK","ABEHIJKL":"EJBAIHLK","ABFGHIJK":"HJBFAGIK","ABFGHIJL":"HJBFAGLI","ABFGHIKL":"HGBAIFLK","ABFGHJKL":"HJBFAGLK","ABFGIJKL":"IJBFAGLK","ABFHIJKL":"HJBAIFLK","ABGHIJKL":"HJBAIGLK","ACDEFGHI":"HGECAFDI","ACDEFGHJ":"HGJCAFDE","ACDEFGHK":"HGECAFDK","ACDEFGHL":"HGFCADLE","ACDEFGIJ":"CGJDAFEI","ACDEFGIK":"CGEDAFIK","ACDEFGIL":"CGEDAFLI","ACDEFGJK":"CGJDAFEK","ACDEFGJL":"CGJDAFLE","ACDEFGKL":"CGEDAFLK","ACDEFHIJ":"HJECAFDI","ACDEFHIK":"HEFCADIK","ACDEFHIL":"HEFCADLI","ACDEFHJK":"HJECAFDK","ACDEFHJL":"HJFCADLE","ACDEFHKL":"HEFCADLK","ACDEFIJK":"CJEDAFIK","ACDEFIJL":"CJEDAFLI","ACDEFIKL":"CEIDAFLK","ACDEFJKL":"CJEDAFLK","ACDEGHIJ":"HGJCADEI","ACDEGHIK":"HGECADIK","ACDEGHIL":"HGECADLI","ACDEGHJK":"HGJCADEK","ACDEGHJL":"HGJCADLE","ACDEGHKL":"HGECADLK","ACDEGIJK":"EGJCADIK","ACDEGIJL":"EGJCADLI","ACDEGIKL":"EGICADLK","ACDEGJKL":"EGJCADLK","ACDEHIJK":"HJECADIK","ACDEHIJL":"HJECADLI","ACDEHIKL":"HEICADLK","ACDEHJKL":"HJECADLK","ACDEIJKL":"EJICADLK","ACDFGHIJ":"HGJCAFDI","ACDFGHIK":"HGFCADIK","ACDFGHIL":"HGFCADLI","ACDFGHJK":"HGJCAFDK","ACDFGHJL":"CGJDAFLH","ACDFGHKL":"HGFCADLK","ACDFGIJK":"CGJDAFIK","ACDFGIJL":"CGJDAFLI","ACDFGIKL":"CGIDAFLK","ACDFGJKL":"CGJDAFLK","ACDFHIJK":"HJFCADIK","ACDFHIJL":"HJFCADLI","ACDFHIKL":"HFICADLK","ACDFHJKL":"HJFCADLK","ACDFIJKL":"CJIDAFLK","ACDGHIJK":"HGJCADIK","ACDGHIJL":"HGJCADLI","ACDGHIKL":"HGICADLK","ACDGHJKL":"HGJCADLK","ACDGIJKL":"IGJCADLK","ACDHIJKL":"HJICADLK","ACEFGHIJ":"HGJCAFEI","ACEFGHIK":"HGECAFIK","ACEFGHIL":"HGECAFLI","ACEFGHJK":"HGJCAFEK","ACEFGHJL":"HGJCAFLE","ACEFGHKL":"HGECAFLK","ACEFGIJK":"EGJCAFIK","ACEFGIJL":"EGJCAFLI","ACEFGIKL":"EGICAFLK","ACEFGJKL":"EGJCAFLK","ACEFHIJK":"HJECAFIK","ACEFHIJL":"HJECAFLI","ACEFHIKL":"HEICAFLK","ACEFHJKL":"HJECAFLK","ACEFIJKL":"EJICAFLK","ACEGHIJK":"EGJCAHIK","ACEGHIJL":"EGJCAHLI","ACEGHIKL":"EGICAHLK","ACEGHJKL":"EGJCAHLK","ACEGIJKL":"EJICAGLK","ACEHIJKL":"EJICAHLK","ACFGHIJK":"HGJCAFIK","ACFGHIJL":"HGJCAFLI","ACFGHIKL":"HGICAFLK","ACFGHJKL":"HGJCAFLK","ACFGIJKL":"IGJCAFLK","ACFHIJKL":"HJICAFLK","ACGHIJKL":"HJICAGLK","ADEFGHIJ":"HGJDAFEI","ADEFGHIK":"HGEDAFIK","ADEFGHIL":"HGEDAFLI","ADEFGHJK":"HGJDAFEK","ADEFGHJL":"HGJDAFLE","ADEFGHKL":"HGEDAFLK","ADEFGIJK":"EGJDAFIK","ADEFGIJL":"EGJDAFLI","ADEFGIKL":"EGIDAFLK","ADEFGJKL":"EGJDAFLK","ADEFHIJK":"HJEDAFIK","ADEFHIJL":"HJEDAFLI","ADEFHIKL":"HEIDAFLK","ADEFHJKL":"HJEDAFLK","ADEFIJKL":"EJIDAFLK","ADEGHIJK":"EGJDAHIK","ADEGHIJL":"EGJDAHLI","ADEGHIKL":"EGIDAHLK","ADEGHJKL":"EGJDAHLK","ADEGIJKL":"EJIDAGLK","ADEHIJKL":"EJIDAHLK","ADFGHIJK":"HGJDAFIK","ADFGHIJL":"HGJDAFLI","ADFGHIKL":"HGIDAFLK","ADFGHJKL":"HGJDAFLK","ADFGIJKL":"IGJDAFLK","ADFHIJKL":"HJIDAFLK","ADGHIJKL":"HJIDAGLK","AEFGHIJK":"EGJFAHIK","AEFGHIJL":"EGJFAHLI","AEFGHIKL":"EGIFAHLK","AEFGHJKL":"EGJFAHLK","AEFGIJKL":"EJIFAGLK","AEFHIJKL":"EJIFAHLK","AEGHIJKL":"EJIAHGLK","AFGHIJKL":"HJIFAGLK","BCDEFGHI":"CGBDHFEI","BCDEFGHJ":"HGBCJFDE","BCDEFGHK":"CGBDHFEK","BCDEFGHL":"CGBDHFLE","BCDEFGIJ":"CGBDJFEI","BCDEFGIK":"CGBDEFIK","BCDEFGIL":"CGBDEFLI","BCDEFGJK":"CGBDJFEK","BCDEFGJL":"CGBDJFLE","BCDEFGKL":"CGBDEFLK","BCDEFHIJ":"CJBDHFEI","BCDEFHIK":"CEBDHFIK","BCDEFHIL":"CEBDHFLI","BCDEFHJK":"CJBDHFEK","BCDEFHJL":"CJBDHFLE","BCDEFHKL":"CEBDHFLK","BCDEFIJK":"CJBDEFIK","BCDEFIJL":"CJBDEFLI","BCDEFIKL":"CEBDIFLK","BCDEFJKL":"CJBDEFLK","BCDEGHIJ":"HGBCJDEI","BCDEGHIK":"EGBCHDIK","BCDEGHIL":"EGBCHDLI","BCDEGHJK":"HGBCJDEK","BCDEGHJL":"HGBCJDLE","BCDEGHKL":"EGBCHDLK","BCDEGIJK":"EGBCJDIK","BCDEGIJL":"EGBCJDLI","BCDEGIKL":"EGBCIDLK","BCDEGJKL":"EGBCJDLK","BCDEHIJK":"EJBCHDIK","BCDEHIJL":"EJBCHDLI","BCDEHIKL":"EIBCHDLK","BCDEHJKL":"EJBCHDLK","BCDEIJKL":"EJBCIDLK","BCDFGHIJ":"HGBCJFDI","BCDFGHIK":"CGBDHFIK","BCDFGHIL":"CGBDHFLI","BCDFGHJK":"HGBCJFDK","BCDFGHJL":"CGBDHFLJ","BCDFGHKL":"CGBDHFLK","BCDFGIJK":"CGBDJFIK","BCDFGIJL":"CGBDJFLI","BCDFGIKL":"CGBDIFLK","BCDFGJKL":"CGBDJFLK","BCDFHIJK":"CJBDHFIK","BCDFHIJL":"CJBDHFLI","BCDFHIKL":"CIBDHFLK","BCDFHJKL":"CJBDHFLK","BCDFIJKL":"CJBDIFLK","BCDGHIJK":"HGBCJDIK","BCDGHIJL":"HGBCJDLI","BCDGHIKL":"HGBCIDLK","BCDGHJKL":"HGBCJDLK","BCDGIJKL":"IGBCJDLK","BCDHIJKL":"HJBCIDLK","BCEFGHIJ":"HGBCJFEI","BCEFGHIK":"EGBCHFIK","BCEFGHIL":"EGBCHFLI","BCEFGHJK":"HGBCJFEK","BCEFGHJL":"HGBCJFLE","BCEFGHKL":"EGBCHFLK","BCEFGIJK":"EGBCJFIK","BCEFGIJL":"EGBCJFLI","BCEFGIKL":"EGBCIFLK","BCEFGJKL":"EGBCJFLK","BCEFHIJK":"EJBCHFIK","BCEFHIJL":"EJBCHFLI","BCEFHIKL":"EIBCHFLK","BCEFHJKL":"EJBCHFLK","BCEFIJKL":"EJBCIFLK","BCEGHIJK":"EJBCHGIK","BCEGHIJL":"EJBCHGLI","BCEGHIKL":"EGBCIHLK","BCEGHJKL":"EJBCHGLK","BCEGIJKL":"EJBCIGLK","BCEHIJKL":"EJBCIHLK","BCFGHIJK":"HGBCJFIK","BCFGHIJL":"HGBCJFLI","BCFGHIKL":"HGBCIFLK","BCFGHJKL":"HGBCJFLK","BCFGIJKL":"IGBCJFLK","BCFHIJKL":"HJBCIFLK","BCGHIJKL":"HJBCIGLK","BDEFGHIJ":"HGBDJFEI","BDEFGHIK":"EGBDHFIK","BDEFGHIL":"EGBDHFLI","BDEFGHJK":"HGBDJFEK","BDEFGHJL":"HGBDJFLE","BDEFGHKL":"EGBDHFLK","BDEFGIJK":"EGBDJFIK","BDEFGIJL":"EGBDJFLI","BDEFGIKL":"EGBDIFLK","BDEFGJKL":"EGBDJFLK","BDEFHIJK":"EJBDHFIK","BDEFHIJL":"EJBDHFLI","BDEFHIKL":"EIBDHFLK","BDEFHJKL":"EJBDHFLK","BDEFIJKL":"EJBDIFLK","BDEGHIJK":"EJBDHGIK","BDEGHIJL":"EJBDHGLI","BDEGHIKL":"EGBDIHLK","BDEGHJKL":"EJBDHGLK","BDEGIJKL":"EJBDIGLK","BDEHIJKL":"EJBDIHLK","BDFGHIJK":"HGBDJFIK","BDFGHIJL":"HGBDJFLI","BDFGHIKL":"HGBDIFLK","BDFGHJKL":"HGBDJFLK","BDFGIJKL":"IGBDJFLK","BDFHIJKL":"HJBDIFLK","BDGHIJKL":"HJBDIGLK","BEFGHIJK":"EJBFHGIK","BEFGHIJL":"EJBFHGLI","BEFGHIKL":"EGBFIHLK","BEFGHJKL":"EJBFHGLK","BEFGIJKL":"EJBFIGLK","BEFHIJKL":"EJBFIHLK","BEGHIJKL":"EJIBHGLK","BFGHIJKL":"HJBFIGLK","CDEFGHIJ":"CGJDHFEI","CDEFGHIK":"CGEDHFIK","CDEFGHIL":"CGEDHFLI","CDEFGHJK":"CGJDHFEK","CDEFGHJL":"CGJDHFLE","CDEFGHKL":"CGEDHFLK","CDEFGIJK":"CGEDJFIK","CDEFGIJL":"CGEDJFLI","CDEFGIKL":"CGEDIFLK","CDEFGJKL":"CGEDJFLK","CDEFHIJK":"CJEDHFIK","CDEFHIJL":"CJEDHFLI","CDEFHIKL":"CEIDHFLK","CDEFHJKL":"CJEDHFLK","CDEFIJKL":"CJEDIFLK","CDEGHIJK":"EGJCHDIK","CDEGHIJL":"EGJCHDLI","CDEGHIKL":"EGICHDLK","CDEGHJKL":"EGJCHDLK","CDEGIJKL":"EGICJDLK","CDEHIJKL":"EJICHDLK","CDFGHIJK":"CGJDHFIK","CDFGHIJL":"CGJDHFLI","CDFGHIKL":"CGIDHFLK","CDFGHJKL":"CGJDHFLK","CDFGIJKL":"CGIDJFLK","CDFHIJKL":"CJIDHFLK","CDGHIJKL":"HGICJDLK","CEFGHIJK":"EGJCHFIK","CEFGHIJL":"EGJCHFLI","CEFGHIKL":"EGICHFLK","CEFGHJKL":"EGJCHFLK","CEFGIJKL":"EGICJFLK","CEFHIJKL":"EJICHFLK","CEGHIJKL":"EJICHGLK","CFGHIJKL":"HGICJFLK","DEFGHIJK":"EGJDHFIK","DEFGHIJL":"EGJDHFLI","DEFGHIKL":"EGIDHFLK","DEFGHJKL":"EGJDHFLK","DEFGIJKL":"EGIDJFLK","DEFHIJKL":"EJIDHFLK","DEGHIJKL":"EJIDHGLK","DFGHIJKL":"HGIDJFLK","EFGHIJKL":"EJIFHGLK"};
+
+// Multi-group third slot → host winner mapping (match num → host slot)
+// Used to look up which host winner each multi-third slot belongs to
+const THIRD_SLOT_HOST = {74:'1E',77:'1I',79:'1A',80:'1L',81:'1D',82:'1G',85:'1B',87:'1K'};
+// Host winner → position index in THIRD_PLACE_TABLE value string [0=1A,1=1B,...,7=1L]
+const HOST_INDEX = {'1A':0,'1B':1,'1D':2,'1E':3,'1G':4,'1I':5,'1K':6,'1L':7};
+
+// ============================================================
+// UNIFIED KNOCKOUT SLOT RESOLVER
+// Handles 4 formats: real team name, 1A/2B, W74/L101, 3A/B/C/D/F
+// ctx = { matches: [...], calcFn: calcStandings, getThirdsFn: getAllThirds }
+// Returns { text: string, resolved: boolean }
+// ============================================================
+const _slotCache = new Map();
+
+function resolveSlot(code, ctx) {
+  if (!code) return { text: '', resolved: false };
+  // Cache key includes code + whether matches are from sim
+  const cacheKey = code + (ctx.matches === allMatches ? '' : 'sim');
+  if (_slotCache.has(cacheKey)) return _slotCache.get(cacheKey);
+
+  const result = _resolveSlotInner(code, ctx, new Set());
+  _slotCache.set(cacheKey, result);
+  return result;
 }
+
+function _resolveSlotInner(code, ctx, visited) {
+  if (!code) return { text: '', resolved: false };
+
+  // Slot-code patterns we handle explicitly (check BEFORE the real-name guard):
+  //   W74 / L101  (winner/loser of a prior match)
+  //   1A / 2B     (group position)
+  //   3A/B/C/D/F  (multi-group third)
+  const isWLRef = /^[WL]\d+$/.test(code);
+  const isSimplePos = /^\d[A-L]$/.test(code);
+  const isMultiThird = /^3[A-L](\/[A-L])+$/.test(code);
+  const isSingleThird = /^3[A-L]$/.test(code);
+
+  // 1. Real team name (not a slot code) — pass through unchanged
+  if (!isWLRef && !isSimplePos && !isMultiThird && !isSingleThird) {
+    return { text: code, resolved: false };
+  }
+
+  // 2. Simple position: 1A, 2B, 3C (single group slot)
+  if (isSimplePos || isSingleThird) {
+    const pos = parseInt(code[0]) - 1;
+    const grpName = 'Group ' + code[1];
+    const rows = ctx.calcFn(grpName);
+    const allDone = rows.length > 0 && rows.every(r => r.p === 3);
+    if (allDone && rows[pos]) return { text: rows[pos].team, resolved: true };
+    return { text: `${grpName.replace('Group ','第')}组第${code[0]}名`, resolved: false };
+  }
+
+  // 3. Winner/Loser reference: W74, L101
+  if (isWLRef) {
+    const wOrL = code[0];
+    const matchNum = parseInt(code.slice(1));
+    const refMatch = ctx.matches.find(m => m.num === matchNum);
+    if (!refMatch) return { text: `${matchNum}场${wOrL==='W'?'胜者':'败者'}`, resolved: false };
+    if (refMatch.score) {
+      if (visited.has(matchNum)) return { text: `${matchNum}场${wOrL==='W'?'胜者':'败者'}`, resolved: false };
+      visited.add(matchNum);
+      const [h, a] = refMatch.score.ft;
+      let winnerSide, loserSide;
+      if (refMatch.score.p) {
+        const [hp, ap] = refMatch.score.p;
+        winnerSide = hp > ap ? 'team1' : 'team2';
+        loserSide = hp > ap ? 'team2' : 'team1';
+      } else {
+        winnerSide = h > a ? 'team1' : (h < a ? 'team2' : null);
+        loserSide = h > a ? 'team2' : (h < a ? 'team1' : null);
+      }
+      const side = wOrL === 'W' ? winnerSide : loserSide;
+      if (side) {
+        const sub = _resolveSlotInner(refMatch[side], ctx, visited);
+        // If the referenced team is itself a real name (not a slot code), it's resolved
+        const subIsCode = /^[WL]\d+$/.test(refMatch[side]) || /^\d[A-L]$/.test(refMatch[side]) || /^3[A-L]/.test(refMatch[side]);
+        return { text: sub.text, resolved: sub.resolved || !subIsCode };
+      }
+    }
+    return { text: `${matchNum}场${wOrL==='W'?'胜者':'败者'}`, resolved: false };
+  }
+
+  // 4. Multi-group third: 3A/B/C/D/F
+  if (isMultiThird) {
+    // Candidate group letters from the code, e.g. "3A/B/C/D/F" -> "A/B/C/D/F"
+    const candidates = code.slice(1);
+    // Check if ALL 12 groups have completed all 3 matchdays
+    const allGroupsDone = Object.keys(GT).every(grp => {
+      const rows = ctx.calcFn(grp);
+      return rows.length > 0 && rows.every(r => r.p === 3);
+    });
+    if (!allGroupsDone) {
+      return { text: `小组第三(${candidates})`, resolved: false };
+    }
+    // All groups done — determine the 8 advancing thirds
+    const thirds = ctx.getThirdsFn ? ctx.getThirdsFn() : getAllThirds();
+    if (thirds.length < 8) return { text: `小组第三(${candidates})`, resolved: false };
+    const advancingGrps = thirds.slice(0, 8).map(th => th.grp.replace('Group ', ''));
+    const key = advancingGrps.slice().sort().join('');
+    const assignment = THIRD_PLACE_TABLE[key];
+    if (!assignment) return { text: `小组第三(${candidates})`, resolved: false };
+    // Find this slot's match, then its host winner (the other team in the match)
+    const thisMatch = ctx.matches.find(m => m.team1 === code || m.team2 === code);
+    const hostSlot = thisMatch ? (thisMatch.team1 === code ? thisMatch.team2 : thisMatch.team1) : null;
+    const hostIdx = hostSlot && HOST_INDEX[hostSlot];
+    if (hostIdx === undefined || hostIdx === false) return { text: `小组第三(${candidates})`, resolved: false };
+    const assignedGrp = assignment[hostIdx];
+    if (!assignedGrp) return { text: `小组第三(${candidates})`, resolved: false };
+    // Now resolve the assigned single-group third (3X) via the simple path
+    const sub = _resolveSlotInner('3' + assignedGrp, ctx, visited);
+    return { text: sub.text, resolved: sub.resolved };
+  }
+
+  // Fallback: return as-is
+  return { text: code, resolved: false };
+}
+
+// Invalidate slot cache when data changes (on refresh or sim edit)
+function invalidateSlotCache() { _slotCache.clear(); }
 
 // ============================================================
 // RENDER
@@ -455,9 +582,8 @@ function renderGroupTable() {
       const [h,a] = m.score.ft;
       res = h>a?'W':h<a?'L':'D';
     }
-    const isNew = m.score && !m._seen;
-    if (m.score) m._seen = true;
-    return `<tr>
+    const isRecent = isWithin24Hours(m.date, m.time);
+    return `<tr${isRecent?' class="blink-match"':''}>
       <td class="dt">${fmtDate(m.date)}</td>
       <td class="dt">${wday(m.date)}</td>
       <td style="color:#FFD700;font-weight:600">${bjt}</td>
@@ -466,7 +592,7 @@ function renderGroupTable() {
       <td style="text-align:left">${t(m.team2)}</td>
       <td>${ht?`<span class="sb">${ht}</span>`:'<span style="color:var(--mu)">-</span>'}</td>
       <td>${ft?`<span class="sb sf">${ft}</span>`:'<span style="color:var(--mu)">-</span>'}</td>
-      <td>${res?`<span class="rb ${res}">${res==='W'?'主胜':res==='D'?'平局':'客胜'}</span>${isNew?'<span class="new-badge">NEW</span>':''}`:'<span style="color:var(--mu)">-</span>'}</td>
+      <td>${res?`<span class="rb ${res}">${res==='W'?'主胜':res==='D'?'平局':'客胜'}</span>`:'<span style="color:var(--mu)">-</span>'}</td>
     </tr>`;
   }).join('');
 }
@@ -508,16 +634,16 @@ function renderThirds() {
 
 function renderKnockout() {
   const kms = allMatches.filter(m => !m.group);
+  const ctx = { matches: allMatches, calcFn: calcStandings, getThirdsFn: getAllThirds };
+  invalidateSlotCache();
   let lastRound = '';
   document.getElementById('ktb').innerHTML = kms.map(m => {
     let rh = '';
     const roundName = rn(m.round);
     if (roundName !== lastRound) { lastRound = roundName; rh = `<tr><td colspan="9" class="krh">🏆 ${roundName}</td></tr>`; }
     const bjt = toBJT(m.date, m.time);
-    const home = resolveSlot(m.team1);
-    const away = resolveSlot(m.team2 || '');
-    const homeResolved = home !== m.team1;
-    const awayResolved = m.team2 && away !== m.team2;
+    const home = resolveSlot(m.team1, ctx);
+    const away = resolveSlot(m.team2 || '', ctx);
     const ht = m.score ? m.score.ht.join('-') : '';
     const ft = m.score ? m.score.ft.join('-') : '';
     let res90 = '';
@@ -528,8 +654,8 @@ function renderKnockout() {
       <td><span class="gl">${roundName}</span></td>
       <td class="dt">${fmtDate(m.date)}</td>
       <td style="color:#FFD700;font-weight:600">${bjt}</td>
-      <td style="font-weight:600;color:${homeResolved?'#A5D6A7':'var(--tm)'}">${home}</td>
-      <td style="font-weight:600;color:${awayResolved?'#A5D6A7':'var(--tm)'}">${away||'—'}</td>
+      <td style="font-weight:600;color:${home.resolved?'#A5D6A7':'var(--tm)'}">${home.text}</td>
+      <td style="font-weight:600;color:${away.resolved?'#A5D6A7':'var(--tm)'}">${away.text||'—'}</td>
       <td>${ht?`<span class="sb">${ht}</span>`:'-'}</td>
       <td>${ft?`<span class="sb sf">${ft}</span>`:'-'}</td>
       <td>${res90?`<span class="rb ${res90==='主胜'?'W':res90==='平局'?'D':'L'}">${res90}</span>`:'-'}</td>
@@ -649,12 +775,12 @@ function renderSimList(){
       <div class="sih">
         <div><div style="font-weight:600;color:var(--gold);font-size:12px">🎮 ${s.name}</div><div style="font-size:10px;color:var(--mu)">${s.created}</div></div>
         <div style="display:flex;gap:5px">
-          <button class="btn bb" style="padding:3px 9px;font-size:10px;border-radius:9px" onclick="toggleSim(${si})">展开</button>
+          <button class="btn bb" style="padding:3px 9px;font-size:10px;border-radius:9px" onclick="toggleSim(${si})" id="btn-toggle-${si}">展开</button>
           <button class="btn bge" style="padding:3px 9px;font-size:10px;border-radius:9px" onclick="verifySim(${si})">✅ 验证</button>
           <button class="btn br" style="padding:3px 8px;font-size:10px;border-radius:9px" onclick="delSim(${si})">删除</button>
         </div>
       </div>
-      <div id="sd-${si}" style="display:none">
+      <div id="sd-${si}" style="display:none" data-expanded="false">
         <div style="padding:5px 9px;border-bottom:1px solid var(--bg2);font-size:10px;color:var(--mu)">✅已有赛果锁定 · 未开赛可点击预测 · 点击比分可修改</div>
         <div class="sw"><table style="table-layout:auto">
           <thead><tr><th>日期</th><th>主队</th><th>客队</th><th>组</th><th>半场</th><th>全场</th><th>结果</th></tr></thead>
@@ -665,8 +791,8 @@ function renderSimList(){
               <td style="text-align:left;${m.score?'opacity:.65':''}">${t(m.team2)}</td>
               <td><span class="gl">${groupShort(m.group)}</span></td>
               <td>${m.score?`<span class="sb">${m.score.ht.join('-')}</span>`:'<span style="color:#FFD700;font-size:10px">点击预测</span>'}</td>
-              <td>${m.score?`<span class="sb sf">${m.score.ft.join('-')}</span>`:''}</td>
-              <td>${m.score?(()=>{const[h,a]=m.score.ft;return`<span class="rb ${h>a?'W':h<a?'L':'D'}">${h>a?'主胜':h<a?'客胜':'平局'}</span>`})():''}</td>
+              <td style="position:relative">${m.score?`<span class="sb sf">${m.score.ft.join('-')}</span>`:''}<span id="sv-ft-${si}-${mi}" style="margin-left:6px;font-size:10px"></span></td>
+              <td style="position:relative">${m.score?(()=>{const[h,a]=m.score.ft;return`<span class="rb ${h>a?'W':h<a?'L':'D'}">${h>a?'主胜':h<a?'客胜':'平局'}</span>`})():''}<span id="sv-wdl-${si}-${mi}" style="margin-left:6px;font-size:10px"></span></td>
             </tr>`).join('')}</tbody>
         </table></div>
         <div style="padding:6px 9px;background:rgba(255,215,0,.04);border-top:1px solid var(--bg2);font-size:11px;color:var(--gold);font-weight:700">🏅 小组赛积分榜（根据预测推算）</div>
@@ -734,16 +860,22 @@ function renderSimThirds(s) {
 function renderSimKnockout(s) {
   const kms = s.matches.filter(m => !m.group);
   if(!kms.length) return '<div style="color:var(--mu);font-size:11px;text-align:center;padding:8px">暂无淘汰赛数据</div>';
+  const ctx = { matches: s.matches, calcFn: (g) => calcSimStandings(s, g), getThirdsFn: () => {
+    const thirds = [];
+    Object.keys(GT).forEach(grp => {
+      const rows = calcSimStandings(s, grp);
+      if (rows.length >= 3) thirds.push({grp, ...rows[2]});
+    });
+    return thirds.sort((a,b)=>b.pts-a.pts||(b.gf-b.ga)-(a.gf-a.ga)||b.gf-a.gf);
+  }};
   let lastRound = '';
   let html = '<table><thead><tr><th>场序</th><th>轮次</th><th>日期</th><th>时间(北京)</th><th>主队</th><th>客队</th><th>半场</th><th>全场</th><th>90分钟</th></tr></thead><tbody>';
   kms.forEach(m => {
     const roundName = rn(m.round);
     if (roundName !== lastRound) { lastRound = roundName; html += `<tr><td colspan="10" class="krh">🏆 ${roundName}</td></tr>`; }
     const bjt = toBJT(m.date, m.time);
-    const home = resolveSlot(m.team1);
-    const away = resolveSlot(m.team2 || '');
-    const homeResolved = home !== m.team1;
-    const awayResolved = m.team2 && away !== m.team2;
+    const home = resolveSlot(m.team1, ctx);
+    const away = resolveSlot(m.team2 || '', ctx);
     const ht = m.score ? m.score.ht.join('-') : '';
     const ft = m.score ? m.score.ft.join('-') : '';
     let res90 = '';
@@ -753,8 +885,8 @@ function renderSimKnockout(s) {
       <td><span class="gl">${roundName}</span></td>
       <td class="dt">${fmtDate(m.date)}</td>
       <td style="color:#FFD700;font-weight:600">${bjt}</td>
-      <td style="font-weight:600;color:${homeResolved?'#A5D6A7':'var(--tm)'}">${home}</td>
-      <td style="font-weight:600;color:${awayResolved?'#A5D6A7':'var(--tm)'}">${away||'—'}</td>
+      <td style="font-weight:600;color:${home.resolved?'#A5D6A7':'var(--tm)'}">${home.text}</td>
+      <td style="font-weight:600;color:${away.resolved?'#A5D6A7':'var(--tm)'}">${away.text||'—'}</td>
       <td>${ht?`<span class="sb">${ht}</span>`:'-'}</td>
       <td>${ft?`<span class="sb sf">${ft}</span>`:'-'}</td>
       <td>${res90?`<span class="rb ${res90==='主胜'?'W':res90==='平局'?'D':'L'}">${res90}</span>`:'-'}</td>
@@ -764,7 +896,19 @@ function renderSimKnockout(s) {
   return html;
 }
 
-function toggleSim(i){const d=document.getElementById('sd-'+i);d.style.display=d.style.display==='none'?'block':'none';}
+function toggleSim(i){
+  const d = document.getElementById('sd-'+i);
+  const btn = document.getElementById('btn-toggle-'+i);
+  if(d.style.display==='none'){
+    d.style.display='block';
+    d.dataset.expanded = 'true';
+    btn.textContent = '收起';
+  }else{
+    d.style.display='none';
+    d.dataset.expanded = 'false';
+    btn.textContent = '展开';
+  }
+}
 
 // 编辑模拟比分 - 使用弹窗代替prompt
 function editSim(si,mi){
@@ -822,41 +966,113 @@ function confirmScore(si,mi){
   m.score={ft:[h,a],ht:[Math.min(h,1),Math.min(a,1)]};
   s.matches.filter(mm=>mm.group)[mi]=m;
   localStorage.setItem('wc26_sims',JSON.stringify(sims));
+  invalidateSlotCache();
   document.querySelector('.mo.op').remove();
+  // 保持展开状态重新渲染
+  const wasExpanded = document.getElementById('sd-'+si).dataset.expanded === 'true';
   renderSimList();
+  if(wasExpanded){
+    document.getElementById('sd-'+si).style.display='block';
+    document.getElementById('sd-'+si).dataset.expanded = 'true';
+    document.getElementById('btn-toggle-'+si).textContent = '收起';
+  }
 }
 
-// 验证模拟预测
-function verifySim(si){
-  const s = sims[si];
-  const el = document.getElementById('sv-'+si);
-  if(el.style.display!=='none'){el.style.display='none';return;}
-  let errors = 0, corrects = 0, total = 0;
-  let html = '<div style="font-size:11px;font-weight:700;color:var(--gold);margin-bottom:6px">📊 验证结果（与实际赛果对比）</div>';
-  s.matches.filter(m=>m.group).forEach(m => {
-    const real = allMatches.find(r => r.team1===m.team1 && r.team2===m.team2 && r.group===m.group);
-    if(!real || !real.score) return;
-    total++;
-    const realFt = real.score.ft.join('-');
-    const predFt = m.score ? m.score.ft.join('-') : '未预测';
-    const isCorrect = m.score && m.score.ft[0]===real.score.ft[0] && m.score.ft[1]===real.score.ft[1];
-    if(isCorrect) corrects++; else errors++;
-    const label = isCorrect ? '<span style="color:#81C784">✅ 正确</span>' : '<span style="color:#EF9A9A">❌ 错误</span>';
-    const correctHint = !isCorrect && real.score ? `<span style="color:#A5D6A7;font-size:10px">正确比分: ${realFt}</span>` : '';
-    html += `<div style="display:flex;align-items:center;gap:6px;padding:4px 0;border-bottom:1px solid rgba(255,255,255,.05);font-size:11px">
-      <div style="flex:1">${t(m.team1)} vs ${t(m.team2)}</div>
-      <div style="color:${isCorrect?'#81C784':'#EF9A9A'};font-weight:600">${predFt}</div>
-      <div>${label}</div>
-      <div>${correctHint}</div>
-    </div>`;
-  });
-  if(total===0){html+='<div style="color:var(--mu);font-size:11px;text-align:center;padding:8px">暂无已结束比赛可验证</div>';}
-  else {
-    html += `<div style="margin-top:6px;font-size:11px;color:var(--mu)">共 ${total} 场 · 正确 ${corrects} 场 · 错误 ${errors} 场 · 正确率 ${total>0?(corrects/total*100).toFixed(0):0}%</div>`;
-  }
-  el.innerHTML = html;
-  el.style.display = 'block';
-}
+		// 验证模拟预测
+		function verifySim(si){
+		  const s = sims[si];
+		  let needRerender = false;
+		  
+		  // 辅助函数：根据比分判断胜平负结果
+		  function getWDL(ft){return ft[0]>ft[1]?'主胜':ft[0]<ft[1]?'客胜':'平局';}
+		  
+		  let errors = 0, corrects = 0, total = 0;
+		  let wdlCorrects = 0, wdlErrors = 0;
+		  
+		  const groupMatches = s.matches.filter(m=>m.group);
+		  
+		  groupMatches.forEach((m, mi) => {
+		    const real = allMatches.find(r => r.team1===m.team1 && r.team2===m.team2 && r.group===m.group);
+		    const ftCell = document.getElementById('sv-ft-'+si+'-'+mi);
+		    const wdlCell = document.getElementById('sv-wdl-'+si+'-'+mi);
+		    
+		    // 清空验证单元格
+		    if(ftCell) ftCell.innerHTML = '';
+		    if(wdlCell) wdlCell.innerHTML = '';
+		    
+		    if(!real || !real.score) {
+		      if(ftCell) ftCell.innerHTML = '<span style="color:var(--mu);font-size:9px">未开赛</span>';
+		      if(wdlCell) wdlCell.innerHTML = '<span style="color:var(--mu);font-size:9px">-</span>';
+		      return;
+		    }
+		    
+		    // 如果模拟中未预测，自动填入实际赛果
+		    if(!m.score) {
+		      m.score = {
+		        ft: [...real.score.ft],
+		        ht: [...real.score.ht]
+		      };
+              needRerender = true;
+              localStorage.setItem('wc26_sims', JSON.stringify(sims));
+              invalidateSlotCache();
+            }
+            
+		    total++;
+		    const realFt = real.score.ft.join('-');
+		    const realWDL = getWDL(real.score.ft);
+		    
+		    // 验证全场比分
+		    const isScoreCorrect = m.score && m.score.ft[0]===real.score.ft[0] && m.score.ft[1]===real.score.ft[1];
+		    if(isScoreCorrect) corrects++; else errors++;
+		    
+		    // 验证胜平负
+		    const predWDL = m.score ? getWDL(m.score.ft) : null;
+		    const isWDLCorrect = predWDL === realWDL;
+		    
+		    // 显示比分验证结果
+		    if(ftCell) {
+		      if(isScoreCorrect) {
+		        ftCell.innerHTML = '<span style="color:#81C784;font-size:11px">✅</span>';
+		      } else {
+		        ftCell.innerHTML = `<span style="color:#A5D6A7;font-size:9px">(${realFt})</span>`;
+		      }
+		    }
+		    
+		    // 显示胜平负验证结果
+		    if(wdlCell) {
+		      if(!m.score) {
+		        wdlCell.innerHTML = '<span style="color:var(--mu);font-size:9px">-</span>';
+		      } else if(isWDLCorrect) {
+		        wdlCell.innerHTML = '<span style="color:#81C784;font-size:11px">✅</span>';
+		        wdlCorrects++;
+		      } else {
+		        wdlCell.innerHTML = `<span style="color:#EF9A9A;font-size:10px">❌ ${realWDL}</span>`;
+		        wdlErrors++;
+		      }
+		    }
+		  });
+		  
+		  // 如果填入了新赛果，重新渲染整个模拟
+		  if(needRerender) {
+		    const wasExpanded = document.getElementById('sd-'+si).dataset.expanded === 'true';
+            renderSimList();
+            if(wasExpanded){
+              document.getElementById('sd-'+si).style.display='block';
+              document.getElementById('sd-'+si).dataset.expanded = 'true';
+              document.getElementById('btn-toggle-'+si).textContent = '收起';
+            }
+            return verifySim(si); // 递归调用重新验证
+          }
+		  
+		  // 在底部显示统计信息
+		  const el = document.getElementById('sv-'+si);
+		  if(total===0){
+		    el.innerHTML = '<div style="color:var(--mu);font-size:11px;text-align:center;padding:8px">暂无已结束比赛可验证</div>';
+		  } else {
+		    el.innerHTML = `<div style="margin-top:6px;font-size:11px;color:var(--mu)">共 ${total} 场 · 比分正确 ${corrects} 场 · 胜平负正确 ${wdlCorrects} 场 · 比分正确率 ${total>0?(corrects/total*100).toFixed(0):0}% · 胜平负正确率 ${total>0?(wdlCorrects/total*100).toFixed(0):0}%</div>`;
+		  }
+		  el.style.display = 'block';
+		}
 
 function delSim(i){if(!confirm('确认删除？'))return;sims.splice(i,1);localStorage.setItem('wc26_sims',JSON.stringify(sims));renderSimList();}
 
